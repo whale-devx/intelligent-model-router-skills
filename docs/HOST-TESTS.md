@@ -1,7 +1,22 @@
 # Host conformance checklist
 
-**Current status: no live-host conformance runs recorded.** The offline tests are not
-proof that a host can discover accounts, switch models, or create subagents.
+**Current status:** One explicit Codex desktop recommendation trial on Windows.
+Account-backed discovery, a second independent host and an authorized handoff
+remain open.
+
+On 2026-11-21, Codex desktop 26.1111.2228.0 explicitly used the skill and ran
+the helper from `0ba1e90`. The host exposed a model choice for subagents, but
+the trial had only its listed identifier and no comparable evaluation evidence.
+The agent recorded that candidate as `listed` with an unmapped benchmark
+identity. The request used `intent: recommend`, no evidence and no authorized
+execution actions. No account query or paid probe was used.
+
+The command `python skills/intelligent-model-router/scripts/route.py --input request.json --as-of 2026-11-21`
+exited 2. It returned `no_eligible_models`, `access_not_established`,
+`selected: null`, `action: recommend` and `execution_status: not_executed`.
+The host retained the current model. This covers explicit use and catalog-only
+abstention. Fresh installation, automatic discovery and successful selection
+or invocation need separate evidence.
 
 For each run, record host name/version, OS, skill commit, date, tester, access mode,
 operations actually exposed, and sanitized observations. Do not record API keys.

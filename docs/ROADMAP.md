@@ -52,10 +52,14 @@ retain host-tool/manual discovery; no provider is mandatory.
 
 ### 3. Arena importer
 
-- [ ] Pin an official dataset revision and review attribution/reuse terms.
-- [ ] Validate the source schema and require configuration-aware identity mapping.
-- [ ] Produce normalized records without a website scraper.
-- [ ] Preserve confidence intervals and provenance in permitted/synthetic golden tests.
+- [x] Pin the imported snapshot and document its CC BY 4.0 attribution.
+- [x] Check the pinned digest and expected columns and require configuration-aware identity mapping.
+- [x] Normalize a local snapshot without a website scraper.
+- [x] Exercise confidence intervals and provenance with a synthetic Parquet fixture.
+
+See the [adapter and source attribution](../skills/intelligent-model-router/references/arena.md)
+and [regression tests](../tests/test_arena.py). Release-wide data rights review
+and independently verified endpoint mappings remain open.
 
 ## P1: useful and trustworthy comparisons
 
