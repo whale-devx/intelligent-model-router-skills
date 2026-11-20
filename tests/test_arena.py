@@ -56,6 +56,24 @@ class ArenaTests(unittest.TestCase):
         self.assertIsNone(record["sample_size"])
         self.assertIsNone(record["ci_lower"])
 
+    def test_source_notice_can_be_copied_independently_of_private_lineage(self):
+        entry = dict(MAP, host_id="private-host", endpoint_id="private-endpoint",
+                     configuration="private-settings", model_key="private-key",
+                     provider="private-provider", api_model_id="private-api-id")
+        imported = arena.normalize([ROW], arena.identities([entry]))
+        empty = arena.normalize([], {})
+        notice = imported["source_notice"]
+        self.assertEqual(notice, empty["source_notice"])
+        self.assertEqual(imported["attribution"], "Arena")
+        self.assertIn("Arena Leaderboard Dataset", notice)
+        self.assertIn(arena.SOURCE, notice)
+        self.assertIn(arena.REVISION + "/README.md", notice)
+        self.assertIn("https://creativecommons.org/licenses/by/4.0/", notice)
+        self.assertIn("English", notice)
+        self.assertIn("normalized", notice)
+        self.assertNotIn("private-", notice)
+        self.assertEqual(imported["lineage"][0]["mapping"], entry)
+
     def test_invalid(self):
         for changes in (dict(rating_lower=None), dict(vote_count=0.5),
                         dict(leaderboard_publish_date="unknown")):

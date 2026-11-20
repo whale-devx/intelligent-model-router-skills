@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Include a copyable Arena attribution notice in normalized reports. It links
+  to the pinned dataset and license and describes the import transformation.
+
 - Ignore benchmark rows keyed to discovery placeholders. Arena imports can check
   each mapped endpoint against a local routing request and retain shared
   configuration lineage without counting an observation twice.

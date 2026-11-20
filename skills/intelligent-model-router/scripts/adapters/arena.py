@@ -11,8 +11,14 @@ from route import DATE, EVIDENCE, MAX_BYTES, TEXT, UNMAPPED_PREFIX, no_duplicate
 
 REVISION = "d3517dc2bbc13f82d925d8524f9c5cb5e4563d36"
 DIGEST = "239038f6719d356628af34320a07b46c8e24d410ccfa0fbb26b39e7e9a4b000f"
-SOURCE = ("https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset/blob/"
-          + REVISION + "/text/latest-00000-of-00001.parquet")
+DATASET = "https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset/blob/" + REVISION
+SOURCE = DATASET + "/text/latest-00000-of-00001.parquet"
+SOURCE_NOTICE = (
+    f"Arena Leaderboard Dataset by Arena ({DATASET}/README.md). "
+    "Licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). "
+    f"The importer uses the pinned raw text leaderboard ({SOURCE}). "
+    "It selects mapped English observations and emits normalized fields for routing."
+)
 FIELDS = {"model_name", "organization", "license", "rating", "rating_lower", "rating_upper",
           "variance", "vote_count", "rank", "category", "leaderboard_publish_date"}
 IDENTITY = {"organization", "model_name", "model_key", "host_id", "endpoint_id", "provider",
@@ -128,7 +134,8 @@ def normalize(rows, mapping):
     missing_identities = mapping.keys() - {identity for identity, _ in seen}
     return dict(evidence=evidence, lineage=lineage, unmapped=unmapped, missing_rating=missing,
                 unmatched_mappings=len(missing_identities),
-                source_url=SOURCE, revision=REVISION, sha256=DIGEST, attribution="Arena")
+                source_url=SOURCE, revision=REVISION, sha256=DIGEST, attribution="Arena",
+                source_notice=SOURCE_NOTICE)
 
 
 def run(snapshot, mappings, request=None):

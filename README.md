@@ -216,3 +216,5 @@ redistribution license. No benchmark provider or host endorses this project.
 
 Pass `--request request.json` to check Arena mappings against the endpoints in
 your routing request. A discovery key beginning with `unmapped:` cannot supply a quality score.
+When sharing adapted scores, copy `source_notice` for the source and license
+credit. The full import report contains your local endpoint mappings.

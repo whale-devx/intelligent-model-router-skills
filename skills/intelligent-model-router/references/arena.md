@@ -53,8 +53,28 @@ English snapshot. `unmapped` counts English source rows lacking a mapping.
 The JSON report includes request-compatible evidence, corresponding lineage in
 the same order, source revision, checksum and excluded-row counts. Original
 publication dates drive the router's freshness filter. Null bounds and counts
-remain unknown. Detailed harness/version information is unavailable. Attribution
-for adapted scores: Arena, [Leaderboard Dataset and pinned metadata](https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset/blob/d3517dc2bbc13f82d925d8524f9c5cb5e4563d36/README.md),
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Indicate that the
-English subset was filtered and its fields normalized when sharing results.
-The model license column describes the model separately.
+remain unknown. Detailed harness/version information is unavailable.
+
+## Credit the source when sharing adapted scores
+
+If you share adapted Arena scores, include the report's `source_notice`.
+It names Arena, links to the pinned dataset card, source file and license,
+and describes the English filter and field normalization. Add a description
+of any further changes you make. To extract the notice from a saved import,
+run this command in the directory containing `arena-report.json`.
+
+~~~sh
+python -c "import json; from pathlib import Path; print(json.loads(Path('arena-report.json').read_bytes())['source_notice'])"
+~~~
+
+The notice contains public source information. Keep the full report local
+because `lineage` includes your configuration and endpoint identifiers.
+Older reports can be regenerated from the pinned snapshot and the original
+mapping file. [Arena's pinned dataset card](https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset/blob/d3517dc2bbc13f82d925d8524f9c5cb5e4563d36/README.md) · [CC BY 4.0 terms](https://creativecommons.org/licenses/by/4.0/)
+
+The installable skill carries the project's Apache-2.0 license. Its sample
+request contains synthetic observations, and its inventory template starts
+empty. The Parquet file is a separate input supplied by the caller. In that
+file the `license` column describes each model. The dataset card supplies
+the license for the leaderboard observations. When adding another source
+or replacing the pin, review the new source's terms and attribution.
