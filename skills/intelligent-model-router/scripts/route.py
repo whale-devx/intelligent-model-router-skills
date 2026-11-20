@@ -183,6 +183,8 @@ def common_evidence(records: list[dict], keys: set[str], task: dict, policy: dic
                     today: date) -> tuple[list[dict], dict[str, int], dict | None]:
     """Keep complete, comparable cohorts; one latest cohort per evidence origin."""
     groups: dict[tuple, dict[str, dict]] = defaultdict(dict)
+    licenses: dict[tuple, str] = {}
+    mirrors: dict[tuple, dict[tuple, dict]] = defaultdict(dict)
     ignored: dict[str, int] = defaultdict(int)
     for row in sorted(records, key=lambda r: (r["source_id"], r["source_url"])):
         url = urlsplit(row["source_url"])
@@ -207,14 +209,21 @@ def common_evidence(records: list[dict], keys: set[str], task: dict, policy: dic
             ignored["stale_or_future_evidence"] += 1
             continue
         group = tuple(row[k] for k in ("origin_id", "cohort_id", "metric", "harness", "observed_at", "kind"))
-        existing = groups[group].get(row["model_key"])
+        model_key = row["model_key"]
+        publication = (group, model_key, row["source_url"])
+        if licenses.setdefault(publication, row["license"]) != row["license"]:
+            raise InputError("evidence: conflicting license statements for one observation at the same source URL")
+        existing = groups[group].get(model_key)
         if existing:
             fields = ("value", "direction", "ci_lower", "ci_upper", "sample_size", "synthetic")
             if any(existing.get(k) != row.get(k) for k in fields):
                 raise InputError("evidence: conflicting records for one origin/cohort/model")
+            source = (row["source_id"], row["source_url"])
+            if source != (existing["source_id"], existing["source_url"]):
+                mirrors[group, model_key][source] = {k: row[k] for k in ("source_id", "source_url", "license")}
             ignored["duplicate_origin_record"] += 1
             continue
-        groups[group][row["model_key"]] = row
+        groups[group][model_key] = row
     origins: dict[str, list[tuple[tuple, dict]]] = defaultdict(list)
     for group, rows in groups.items():
         if set(rows) != keys:
@@ -228,7 +237,8 @@ def common_evidence(records: list[dict], keys: set[str], task: dict, policy: dic
         options = sorted(origins[origin], key=lambda x: (x[0][4], x[0]))
         group, rows = options[-1]
         ignored["superseded_cohort"] += sum(len(r) for _, r in options[:-1])
-        chosen.append({"origin_id": origin, "cohort_id": group[1], "rows": rows})
+        additional_sources = {k: list(mirrors[group, k].values()) for k in sorted(rows) if (group, k) in mirrors}
+        chosen.append({"origin_id": origin, "cohort_id": group[1], "rows": rows, "additional_sources": additional_sources})
     coverage = None
     required = policy.get("min_sources", 1)
     if len(chosen) < required:
@@ -285,8 +295,12 @@ def route(request: dict, today: date | None = None) -> dict:
     keys = {m["model_key"] for m in eligible}
     cohorts, ignored, coverage = common_evidence(request["evidence"], keys, task, policy, today)
     result["ignored_evidence"] = ignored
-    result["evidence"] = [{"origin_id": c["origin_id"], "cohort_id": c["cohort_id"],
-                           "records": [c["rows"][k] for k in sorted(keys)]} for c in cohorts]
+    for cohort in cohorts:
+        entry = {"origin_id": cohort["origin_id"], "cohort_id": cohort["cohort_id"],
+                 "records": [cohort["rows"][k] for k in sorted(keys)]}
+        if cohort["additional_sources"]:
+            entry["additional_sources"] = cohort["additional_sources"]
+        result["evidence"].append(entry)
     if coverage is not None:
         result["status"] = "insufficient_evidence"
         result["evidence_coverage"] = coverage

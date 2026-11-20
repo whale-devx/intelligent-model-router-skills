@@ -234,6 +234,49 @@ class RoutingTests(unittest.TestCase):
         with self.assertRaises(InputError):
             self.run_route()
 
+    def test_one_source_url_with_conflicting_license_labels_is_ambiguous(self):
+        rows = self.request["evidence"]
+        original = rows[0]
+        mirror = dict(original, source_id="z-mirror", source_url="https://example.invalid/mirror")
+        for first, second in ((original, dict(original, license="other-label")),
+                              (mirror, dict(mirror, source_id="zz-mirror", license="other-label"))):
+            for pair in ((first, second), (second, first)):
+                self.request["evidence"] = rows + list(pair)
+                with self.subTest(url=first["source_url"]), self.assertRaisesRegex(InputError, "license"):
+                    self.run_route()
+
+    def test_mirror_citations_stay_with_the_scored_observation(self):
+        before = self.run_route()
+        row = self.request["evidence"][0]
+        citation = {"source_id": "mirror", "source_url": "https://example.invalid/reprint",
+                    "license": "fixture-reprint-label"}
+        mirror = dict(row, **citation)
+        self.request["evidence"] += [mirror, mirror, dict(row)]
+        after = self.run_route()
+        self.request["evidence"].reverse()
+        self.assertEqual(self.run_route(), after)
+        self.assertEqual(before["rankings"], after["rankings"])
+        self.assertEqual(after["ignored_evidence"]["duplicate_origin_record"], 3)
+        for index, cohort in enumerate(after["evidence"]):
+            self.assertEqual(cohort["records"], before["evidence"][index]["records"])
+            if cohort["origin_id"] == row["origin_id"]:
+                self.assertEqual(cohort["additional_sources"], {row["model_key"]: [citation]})
+            else:
+                self.assertNotIn("additional_sources", cohort)
+
+        self.request["policy"]["min_sources"] = 3
+        below_minimum = self.run_route()
+        self.assertEqual(below_minimum["status"], "insufficient_evidence")
+        self.assertEqual(below_minimum["evidence_coverage"]["complete_origins"], 2)
+        self.assertEqual(below_minimum["evidence"], after["evidence"])
+
+    def test_mirrors_of_superseded_cohorts_stay_out_of_the_report(self):
+        before = self.run_route()
+        older = [dict(r, observed_at="2026-11-01", license="earlier-fixture-license")
+                 for r in self.request["evidence"]]
+        self.request["evidence"] += older + [dict(r, source_id="older-mirror") for r in older]
+        self.assertEqual(self.run_route()["evidence"], before["evidence"])
+
     def test_latest_complete_cohort_per_origin(self):
         older = copy.deepcopy(self.request["evidence"])
         for row in older:
