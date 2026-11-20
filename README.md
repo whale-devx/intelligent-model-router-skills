@@ -209,3 +209,5 @@ benchmarks, and trademarks retain their own terms. A source guide is not a data
 redistribution license. No benchmark provider or host endorses this project.
 
 [Changelog](CHANGELOG.md) · [Security](SECURITY.md) · [Documentation style](docs/WRITING-GUIDE.md) · [Back to top](#intelligent-model-router-skills)
+
+[Import a pinned Arena English text snapshot](skills/intelligent-model-router/references/arena.md)

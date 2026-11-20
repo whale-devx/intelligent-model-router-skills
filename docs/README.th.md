@@ -204,3 +204,5 @@ Scripts ใช้ Python Standard Library เท่านั้น ดู [แ�
 โครงการไม่ได้รับการรับรองจากเจ้าของ Benchmark หรือ Host
 
 [Changelog](../CHANGELOG.md) · [Security](../SECURITY.md) · [กลับด้านบน](#intelligent-model-router-skills)
+
+[นำเข้าคะแนนความชอบด้านข้อความภาษาอังกฤษจาก snapshot ของ Arena](../skills/intelligent-model-router/references/arena.md)
