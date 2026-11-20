@@ -1,68 +1,164 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner-light.svg">
+  <img src="docs/assets/banner-light.svg" alt="Your models, one clear decision: available models flow through a routing decision to a recommendation or an authorized host handoff." width="1200">
+</picture>
+
 # Intelligent Model Router Skills
 
-**Use the models you already have, more deliberately.**
+**Use the models you already have. Choose with evidence.**
 
-A provider-neutral [Agent Skill](https://agentskills.io/specification) for choosing
-models before an automatic task handoff or subagent creation. It discovers access
-through the host/user, checks constraints, compares relevant evidence, and returns
-an explainable routing plan. The host remains responsible for execution.
+A provider-neutral [Agent Skill](https://agentskills.io/specification) that helps your
+agent choose a model **before a task handoff or subagent creation**. Start with the
+models you can access, check the constraints, and get an explainable routing plan.
+**Your host stays in control of execution.**
 
-**Status: 0.1.0-alpha.1 — offline reference implementation.** Not a hosted gateway,
-agent framework, live leaderboard service, or claim of universal model switching.
+[![Offline checks on main](https://github.com/whale-devx/intelligent-model-router-skills/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/whale-devx/intelligent-model-router-skills/actions/workflows/ci.yml)
+[![Stage: alpha](https://img.shields.io/badge/stage-alpha-9a6700)](#current-status)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-0969da)](LICENSE)
 
-[ภาษาไทย](docs/README.th.md) · [Skill](skills/intelligent-model-router/SKILL.md) ·
-[Contract](skills/intelligent-model-router/references/contract.md) ·
-[Source guide](skills/intelligent-model-router/references/sources.md) ·
-[Roadmap](docs/ROADMAP.md)
+[**Quick start**](#quick-start) · [**How it works**](#how-it-works) · [**Documentation**](docs/README.md) · [**Roadmap**](docs/ROADMAP.md) · [**ภาษาไทย**](docs/README.th.md)
 
-## What works now
+> [!IMPORTANT]
+> **0.1.0-alpha.1 is an offline reference implementation.** Host/user-supplied
+> inventory and evidence work today. Automatic account discovery, live leaderboard
+> imports, and native execution adapters are not implemented. Installing the skill
+> does not override a host's built-in Auto mode. [See current status](#current-status).
 
-| Capability | This alpha |
-| --- | --- |
-| Portable skill | Standard SKILL.md with progressive reference loading |
-| Inventory discovery | Host/user protocol plus offline catalog/inventory import |
-| Deterministic decisions | Validated JSON, access/privacy/capacity/budget gates |
-| Multi-source evidence | Explicit provenance, exact identities, complete cohorts, origin deduplication |
-| Preferences | Quality, bounded cost, latency; unknown values are never treated as free |
-| Auto/subagent use | Host-aware action plans with permissions, safe boundaries and depth limits |
-| No Python available | Instruction-only recommendations with the same constraints |
-| Model execution / live source APIs | Not implemented; host integration is explicit and optional |
+## Quick start
 
-No default inference provider. No mandatory API key, server, database, telemetry, or
-runtime dependency. The optional Python helpers use only the standard library.
+### 1. Install the skill
 
-## Install
-
-Once this branch is merged into the default branch, an Agent Skills-compatible
-installer such as the [skills CLI](https://github.com/vercel-labs/skills) can discover:
+Run this in your project, then choose your agent in the installer:
 
 ```sh
 npx skills add whale-devx/intelligent-model-router-skills --skill intelligent-model-router
 ```
 
-Review the installer and select your actual host. Installation alone does not grant
-model switching or subagent permissions. A host's built-in Auto routing is not overridden.
+Use a Node.js version supported by the [Skills CLI](https://github.com/vercel-labs/skills#install-a-skill).
+Python is **not** required for the instruction-only workflow.
 
-For a manual install, copy the entire `skills/intelligent-model-router/` directory
-into your host's documented skill location. Do not copy only SKILL.md: references,
-assets, scripts, and the bundled license belong together. Do not overwrite an existing
-installation without reviewing the change. No host-specific automatic installer is bundled.
+<details>
+<summary>Install across projects, choose an agent, or install manually</summary>
 
-## Try the offline demonstration
-
-From a checkout, with Python 3.10+:
+Add `-g` for a user-level installation:
 
 ```sh
-python skills/intelligent-model-router/scripts/route.py \
-  --input skills/intelligent-model-router/assets/example-request.json \
-  --as-of 2026-11-20
-python -m unittest discover -s tests -v
+npx skills add whale-devx/intelligent-model-router-skills --skill intelligent-model-router -g
 ```
 
-The fixture uses **fictional models and synthetic scores**. It selects `example-b`
-under its bounded-cost preference, but returns `action: recommend` and
-`execution_status: not_executed`. Synthetic evidence can NEVER plan execution.
-The fixed date makes the demonstration reproducible; live requests use UTC today.
+Use `-a` to select an installer target, for example:
+
+```sh
+npx skills add whale-devx/intelligent-model-router-skills --skill intelligent-model-router -a claude-code
+```
+
+This names an installer target, **not** a certification of this skill's live-host
+behavior. See the [host test checklist](docs/HOST-TESTS.md).
+
+For a manual installation, copy the entire `skills/intelligent-model-router/`
+folder to your host's documented skill location. Keep its references, assets,
+scripts, and license together. Review before replacing an existing installation.
+
+[Installation details, privacy, and troubleshooting](docs/GETTING-STARTED.md)
+
+</details>
+
+### 2. Ask your agent to use it
+
+```text
+Use intelligent-model-router before creating subagents.
+Inspect the models this host exposes to me; do not assume access.
+Choose a model for each actual task using relevant evidence.
+Keep my existing permissions, privacy rules, and budget.
+If evidence is missing, explain what is needed.
+If delegation is unavailable, recommend only.
+```
+
+### 3. Review the plan
+
+Expect the selected model, reasons, evidence dates, exclusions, and execution status.
+The helper **does not call a model**: it returns a recommendation or a proposed
+host operation. A host must revalidate permissions and confirm any actual handoff.
+
+**No new inference account. No gateway. No server required.** The skill and bundled
+helpers send no telemetry. The external installer has its own
+[telemetry settings](docs/GETTING-STARTED.md#installer-privacy).
+
+## When to use it
+
+| Your goal | The skill's role |
+| --- | --- |
+| **Choose a model for the next task** | Compare eligible models using task-relevant evidence and constraints. |
+| **Create specialized subagents** | Recommend a model for each subagent's actual task, without expanding permissions. |
+| **Reconsider a model or plan a fallback** | Make a new constrained decision at a safe boundary; never silently relax policy. |
+
+The skill selects **among your available models**, not every model on a leaderboard.
+It is not a provider subscription, inference proxy, or agent runtime.
+
+## How it works
+
+```mermaid
+flowchart TD
+    A[Host or user supplies model inventory] --> B[Profile task and constraints]
+    B --> C[Filter eligible models]
+    C --> D[Compare permitted task-relevant evidence]
+    D --> E{Enough comparable evidence?}
+    E -->|No| F[Abstain and explain what is missing]
+    E -->|Yes| G[Return an explainable routing plan]
+    G --> H[Recommend only]
+    G -.-> I[Host revalidates and performs an authorized handoff]
+```
+
+**In words:** inventory → constraints → comparable evidence → plan, or an honest
+abstention. The dotted handoff belongs to the **external host**, not the offline
+helper. A public catalog is not proof of access; a plan is not an execution receipt.
+
+Read the [routing contract](skills/intelligent-model-router/references/contract.md)
+for exact input fields, ranking rules, defaults, and limitations.
+
+## Current status
+
+| Available in this alpha | Not implemented or not yet verified |
+| --- | --- |
+| Portable `SKILL.md` and instruction-only workflow | Live-host conformance runs are not yet recorded |
+| Host/user discovery protocol and explicit-file inventory import | Automatic host-native account/model discovery |
+| Offline eligibility checks and deterministic ranking | Live leaderboard fetching and native execution adapters |
+| Provenance, exact model identities, source deduplication | Calibrated success probabilities and learned routing |
+| Proposed actions with permission and safe-boundary checks | A universal model switch or automatic Sub-agent API |
+
+The CI badge reports **offline checks on `main`**, not live-host compatibility,
+security certification, or an improvement in model quality.
+
+**Evidence rules:** unknown is not zero; popularity is not capability; preference
+is not correctness; leaderboard scores are not task-success probabilities.
+
+<details>
+<summary>What happens when information is missing?</summary>
+
+| Result | Meaning |
+| --- | --- |
+| `needs_inventory` | Supply an authorized model inventory. |
+| `no_eligible_models` | No candidate meets the current constraints. |
+| `insufficient_evidence` | Comparable, sufficiently current evidence is missing. |
+| `selected` | A model was selected; execution is still a separate host action. |
+
+Invalid input is rejected. Unknown efficiency values are not treated as free or
+instant. Missing evidence is not silently filled in. The complete rules are in the
+[contract](skills/intelligent-model-router/references/contract.md).
+
+</details>
+
+## See the offline example
+
+This example uses **fictional models and synthetic scores**, not a live benchmark.
+From a repository checkout with Python 3.10+:
+
+```sh
+python skills/intelligent-model-router/scripts/route.py --input skills/intelligent-model-router/assets/example-request.json --as-of 2026-11-20
+```
+
+Abbreviated result:
 
 ```json
 {
@@ -74,55 +170,42 @@ The fixed date makes the demonstration reproducible; live requests use UTC today
 }
 ```
 
-This is an abbreviated result, not a benchmark or performance claim.
+Synthetic evidence cannot plan execution. The fixed date makes the demonstration
+repeatable; real requests must use current observations, not a replay date.
 
-## Use with your agent
+<details>
+<summary>For contributors: run the offline test suite</summary>
 
-> Before creating subagents, use intelligent-model-router to discover the models
-> available in this host. Choose models for each actual task using permitted evidence.
-> Keep the current permissions and budget. Recommend only when the host cannot delegate.
-
-The host or user supplies a trustworthy inventory and task-matched evidence.
-The helper accepts only the models in that inventory, not every model on a leaderboard.
-A model appearing in a catalog remains `listed` until access and capabilities are verified.
-
-If evidence is missing or incomparable, the helper abstains with
-`insufficient_evidence`. It does not invent rankings, availability, prices or success
-probabilities. See the [host protocol](skills/intelligent-model-router/references/host-protocol.md)
-for the distinction between access discovery, recommendation, and actual execution.
-
-## Architecture
-
-```text
-Host/user inventory + task constraints + permitted benchmark/local evidence
-                                  |
-                  Portable Skill instructions
-                                  |
-                Optional offline decision helper
-                                  |
-        Explainable recommendation / proposed host operation
-                                  |
-      Host revalidates permissions and performs authorized execution
+```sh
+python -m unittest discover -s tests -v
 ```
 
-The helper produces plans only. Native host adapters, live source importers, learned
-routing, Pareto optimization, and calibrated probability estimation are future work.
-No live-host integration or savings/accuracy improvement is claimed by this release.
+The helpers use Python's standard library. Tests cover validation, policy gates,
+source deduplication, stale/missing evidence, subagent depth, CLI behavior, and
+copying the skill outside the repository. See [contribution guidance](CONTRIBUTING.md).
 
-## Development and safety
+</details>
 
-Tests cover input validation, eligibility, missing/stale evidence, source deduplication,
-relative rank fusion, synthetic-data isolation, permissions, subagent depth, CLI behavior,
-and copying the skill out of the repository. CI is defined for Linux/Windows and
-Python 3.10/3.13; a matrix entry is supported only after its run actually succeeds.
+## Find your next step
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md),
-[host smoke tests](docs/HOST-TESTS.md), and [ROADMAP.md](docs/ROADMAP.md).
-Keep credentials, personal model inventories and raw benchmark exports out of commits.
-Store private requests under `.router-local/`, whose contents are ignored by Git.
+| I want to… | Start here |
+| --- | --- |
+| Install and try the skill | [Getting started](docs/GETTING-STARTED.md) |
+| Browse all documentation | [Documentation hub](docs/README.md) |
+| Integrate a host or supply model inventory | [Host protocol](skills/intelligent-model-router/references/host-protocol.md) |
+| Understand decisions or supply evidence | [Contract](skills/intelligent-model-router/references/contract.md) · [Source guide](skills/intelligent-model-router/references/sources.md) |
+| Test compatibility or report a problem | [Host checklist](docs/HOST-TESTS.md) · [Open an issue](https://github.com/whale-devx/intelligent-model-router-skills/issues/new/choose) |
+| Help build the next version | [Roadmap](docs/ROADMAP.md) · [Contributing](CONTRIBUTING.md) |
+
+Small contributions count: clarify a confusing step, improve a translation, or
+record a reproducible host test. Report failures and unknowns as well as successes.
+Never include credentials, personal inventories, or private prompts in public issues.
+For vulnerabilities, follow [SECURITY.md](SECURITY.md).
 
 ## License and attribution
 
-Project code and authored instructions use [Apache-2.0](LICENSE). Third-party datasets,
-benchmarks and trademarks remain subject to their own terms. The source guide is not
-a redistribution license. This project is not endorsed by any benchmark or model provider.
+Project code and authored instructions use [Apache-2.0](LICENSE). Third-party data,
+benchmarks, and trademarks retain their own terms. A source guide is not a data
+redistribution license. No benchmark provider or host endorses this project.
+
+[Changelog](CHANGELOG.md) · [Security](SECURITY.md) · [Documentation style](docs/WRITING-GUIDE.md) · [Back to top](#intelligent-model-router-skills)

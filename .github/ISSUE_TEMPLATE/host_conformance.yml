@@ -1,0 +1,60 @@
+name: Host compatibility report
+description: Share observed installation, activation, discovery, or delegation results.
+title: "[Host test] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use [HOST-TESTS.md](https://github.com/whale-devx/intelligent-model-router-skills/blob/main/docs/HOST-TESTS.md).
+        Report observations, not assumed compatibility. A successful install does not prove model switching.
+        Do not run paid probes or change permissions without approval. Do not include secrets, private prompts, or personal inventories.
+  - type: input
+    id: host
+    attributes:
+      label: Host, version, and operating system
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Skill commit and test date
+    validations:
+      required: true
+  - type: textarea
+    id: installation
+    attributes:
+      label: Installation method and scope
+      description: Include the sanitized install command, installer version, and project or user scope.
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: Observed results
+      description: Use pass, fail, not tested, or unavailable for each item. Explain failures and unknowns.
+      value: |
+        - Installation:
+        - Skill activation:
+        - Inventory discovery:
+        - Recommendation:
+        - Model-aware delegation:
+        - Model switching:
+        - Permission-denied fallback:
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence and limitations
+      description: For execution claims, describe the host confirmation that the chosen model was used. Do not submit private prompts or account identifiers.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety and accuracy
+      options:
+        - label: I have removed secrets and private user data.
+          required: true
+        - label: I have distinguished observed results from untested capabilities.
+          required: true

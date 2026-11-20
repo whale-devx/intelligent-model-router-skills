@@ -1,0 +1,38 @@
+name: Feature or documentation request
+description: Propose an improvement grounded in a real task or confusing step.
+title: "[Request] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the [roadmap](https://github.com/whale-devx/intelligent-model-router-skills/blob/main/docs/ROADMAP.md).
+        This project is a portable Agent Skill, not an inference gateway or a new provider.
+        English and Thai reports are welcome. Do not include private prompts, credentials, or personal inventories.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the task or confusing part of the documentation without private information.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Explain the desired behavior, alternatives, and relevant host constraints.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting documentation or evidence
+      description: Link official host documentation or benchmark methodology. Note data rights for new sources; do not paste restricted exports.
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: How would we verify success?
+      description: Suggest a reproducible example or acceptance criterion. Unknowns are welcome.
+    validations:
+      required: false
