@@ -1,0 +1,2 @@
+# Development/CI only. The installed skill and its runtime helpers stay dependency-free.
+PyYAML==6.0.3

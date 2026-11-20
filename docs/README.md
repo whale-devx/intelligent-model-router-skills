@@ -27,6 +27,7 @@ separate steps; these guides help you follow the right path.
 | Guide | What you will find |
 | --- | --- |
 | [Contributing](../CONTRIBUTING.md) | Development workflow and review expectations |
+| [Installation verification](INSTALLATION-TESTS.md) | Isolated npx checks, package integrity, exact versions, and CI evidence limits |
 | [Host conformance](HOST-TESTS.md) | A reproducible checklist for recording real host behavior |
 | [Roadmap](ROADMAP.md) | Priorities and acceptance criteria, not promised release dates |
 | [Writing guide](WRITING-GUIDE.md) | GitHub formatting, accessibility, language parity, and honest status claims |
