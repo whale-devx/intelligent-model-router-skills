@@ -43,7 +43,7 @@ jobs:
       SOURCE_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
       SOURCE_REF: ${{ github.event.pull_request.head.sha || github.sha }}
       SOURCE_MODE: ${{ matrix.source }}
-      REPORT_PATH: ${{ runner.temp }}/installation-${{ matrix.os }}-${{ matrix.source }}.json
+      REPORT_PATH: .router-local/installation-${{ matrix.os }}-${{ matrix.source }}.json
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
