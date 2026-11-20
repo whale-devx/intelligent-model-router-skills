@@ -164,6 +164,19 @@ class RoutingTests(unittest.TestCase):
         self.request["models"][0]["model_key"] += "-other-effort"
         self.assertEqual(self.run_route()["status"], "insufficient_evidence")
 
+    def test_matching_discovery_placeholders_cannot_supply_quality(self):
+        model = self.request["models"][0]
+        old = model["model_key"]
+        model["model_key"] = "unmapped:" + model["id"]
+        for row in self.request["evidence"]:
+            if row["model_key"] == old:
+                row["model_key"] = model["model_key"]
+        result = self.run_route()
+        self.assertEqual(result["status"], "insufficient_evidence")
+        self.assertIsNone(result["selected"])
+        self.assertEqual(result["ignored_evidence"]["unmapped_benchmark_identity"], 2)
+        self.assertTrue(all(r["quality_score"] is None for r in result["rankings"]))
+
     def test_mirror_does_not_inflate_evidence(self):
         before = self.run_route()
         mirror = copy.deepcopy(self.request["evidence"])

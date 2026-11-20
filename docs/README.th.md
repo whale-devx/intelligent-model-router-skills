@@ -208,3 +208,6 @@ Scripts ใช้ Python Standard Library เท่านั้น ดู [แ�
 [Changelog](../CHANGELOG.md) · [Security](../SECURITY.md) · [กลับด้านบน](#intelligent-model-router-skills)
 
 [นำเข้าคะแนนความชอบด้านข้อความภาษาอังกฤษจาก snapshot ของ Arena](../skills/intelligent-model-router/references/arena.md)
+
+ใช้ `--request request.json` เพื่อตรวจว่า mapping ของ Arena ตรงกับ endpoint ในคำขอ
+Router จะไม่นำคีย์จากการสำรวจที่ขึ้นต้นด้วย `unmapped:` มาใช้เป็นคะแนนคุณภาพ

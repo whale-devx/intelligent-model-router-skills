@@ -31,6 +31,10 @@ Keep the request local; do not commit personal inventory or private evaluations.
 the host may pass to its provider tool. `model_key` identifies the evaluated revision
 AND configuration (effort, quantization, etc.); mappings are explicit caller inputs.
 Two endpoints may share one model key only when their evaluated configurations match.
+Discovery reserves the `unmapped:` prefix for endpoints awaiting identity review.
+Evidence carrying that prefix is ignored even if its key matches an endpoint.
+An otherwise eligible unmapped endpoint prevents a complete comparison cohort.
+The router returns `insufficient_evidence` until all eligible identities are covered.
 
 Required fields: `id`, `model_key`, `provider`, `api_model_id`, `access`, `observed_at`,
 `access_source`, `capabilities`, `actions`, `local`. Optional capacity fields are

@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 VERSION = "0.1.0-alpha.1"
 MAX_BYTES = 2 * 1024 * 1024
+UNMAPPED_PREFIX = "unmapped:"
 
 
 class InputError(ValueError):
@@ -193,6 +194,9 @@ def common_evidence(records: list[dict], keys: set[str], task: dict, policy: dic
         if row["kind"] == "popularity":
             ignored["popularity_is_not_quality"] += 1
             continue
+        if row["model_key"].startswith(UNMAPPED_PREFIX):
+            ignored["unmapped_benchmark_identity"] += 1
+            continue
         if row["model_key"] not in keys or row["task"] != task["kind"] or row["language"] != task["language"]:
             ignored["task_language_or_model_mismatch"] += 1
             continue
@@ -274,6 +278,8 @@ def route(request: dict, today: date | None = None) -> dict:
                            "records": [c["rows"][k] for k in sorted(keys)]} for c in cohorts]
     if len(cohorts) < policy.get("min_sources", 1):
         result["status"] = "insufficient_evidence"
+        if any(key.startswith(UNMAPPED_PREFIX) for key in keys):
+            result["reasons"].append("At least one eligible endpoint still needs a benchmark configuration mapping.")
         result["rankings"] = [{"id": m["id"], "quality_score": None} for m in sorted(eligible, key=lambda x: x["id"])]
         result["reasons"].append("Not enough independent, fresh, complete comparison cohorts; no winner inferred.")
         return result

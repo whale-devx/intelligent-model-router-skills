@@ -213,3 +213,6 @@ redistribution license. No benchmark provider or host endorses this project.
 [Changelog](CHANGELOG.md) · [Security](SECURITY.md) · [Documentation style](docs/WRITING-GUIDE.md) · [Back to top](#intelligent-model-router-skills)
 
 [Import a pinned Arena English text snapshot](skills/intelligent-model-router/references/arena.md)
+
+Pass `--request request.json` to check Arena mappings against the endpoints in
+your routing request. A discovery key beginning with `unmapped:` cannot supply a quality score.

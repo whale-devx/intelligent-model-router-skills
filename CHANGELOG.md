@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Ignore benchmark rows keyed to discovery placeholders. Arena imports can check
+  each mapped endpoint against a local routing request and retain shared
+  configuration lineage without counting an observation twice.
+
 - Add opt-in, read-only OpenCode experimental v2 model-list and Ollama tags adapters.
 - Require explicit local-service authorization; support offline snapshots with original
   observation dates, bounded requests, redacted failures and exact identity fields.
