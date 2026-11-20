@@ -127,6 +127,14 @@ proposed host operation; `execution_status` is ALWAYS `not_executed` in this rel
 `estimated_success_probability` is always null. No fitted probability model exists.
 Rankings are quality ordered; an efficiency preference may select a different row.
 
+For a verified selection, `reasons` explains an explicit recommendation,
+retention of the current endpoint, or a missing safe boundary. When no
+requested operation qualifies, it names the blockers for each operation
+considered. For example, `delegate: host does not offer it.` identifies a
+host capability, while `delegate: policy does not authorize it.` identifies
+the request's permission limit. Automatic planning tries switch, invoke and
+delegate in order. Treat reason text as explanatory prose.
+
 Exit codes: 0 selected/schema printed; 2 abstention; 1 invalid/unreadable input.
 Malformed CLI arguments use argparse's exit code 2. Default date is UTC today;
 `--as-of YYYY-MM-DD` is for reproducible replay, not falsifying live freshness.

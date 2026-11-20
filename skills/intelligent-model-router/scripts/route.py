@@ -238,6 +238,33 @@ def pair_score(left: dict, right: dict) -> float:
     return float(win if left["direction"] == "higher" else not win)
 
 
+def plan_handoff(task: dict, policy: dict, host: dict, selected: dict) -> tuple[str, list[str]]:
+    if task["intent"] == "recommend":
+        return "recommend", ["The request asks for a recommendation only."]
+    if task["intent"] == "auto":
+        if selected["id"] == task.get("current_candidate_id"):
+            return "recommend", ["The selected endpoint is already the current candidate."]
+        if not task.get("safe_boundary", False):
+            return "recommend", ["Automatic handoff requires a safe task boundary."]
+    actions = ("delegate",) if task["intent"] == "subagent" else ("switch", "invoke", "delegate")
+    at_depth_limit = task.get("delegation_depth", 0) >= policy.get("max_delegation_depth", 1)
+    reasons = []
+    for action in actions:
+        missing = []
+        if action not in host["actions"]:
+            missing.append("host does not offer it")
+        if action not in selected["actions"]:
+            missing.append("endpoint does not offer it")
+        if action not in policy.get("authorized_actions", []):
+            missing.append("policy does not authorize it")
+        if action == "delegate" and at_depth_limit:
+            missing.append("delegation depth limit reached")
+        if not missing:
+            return action, ["Host action is a plan only. Recheck access, policy, budget and tool permissions before dispatch."]
+        reasons.append(f"{action}: {', '.join(missing)}.")
+    return "recommend", reasons
+
+
 def route(request: dict, today: date | None = None) -> dict:
     validate(request)
     today = today or datetime.now(timezone.utc).date()
@@ -313,22 +340,11 @@ def route(request: dict, today: date | None = None) -> dict:
     if selected["access"] != "verified":
         result["warnings"].append("User-declared access: verify callability before execution.")
         return result
-    permitted = set(request["host"]["actions"]) & set(selected["actions"]) & set(policy.get("authorized_actions", []))
-    if task.get("delegation_depth", 0) >= policy.get("max_delegation_depth", 1):
-        permitted.discard("delegate")
-    if task["intent"] == "subagent":
-        if "delegate" in permitted:
-            result["action"] = "delegate"
-    elif task["intent"] == "auto" and selected["id"] != current:
-        if task.get("safe_boundary", False):
-            result["action"] = next((a for a in ("switch", "invoke", "delegate") if a in permitted), "recommend")
-        else:
-            result["warnings"].append("No safe task boundary declared; automatic handoff not planned.")
+    result["action"], handoff_reasons = plan_handoff(task, policy, request["host"], selected)
+    result["reasons"].extend(handoff_reasons)
+    if task["intent"] == "auto" and selected["id"] != current and not task.get("safe_boundary", False):
+        result["warnings"].append("No safe task boundary declared; automatic handoff not planned.")
     result["requires_approval"] = result["action"] != "recommend" and task["risk"] in ("high", "critical")
-    if result["action"] == "recommend":
-        result["reasons"].append("Recommendation only: the requested host action is unavailable, unauthorized, unnecessary, or unsafe.")
-    else:
-        result["reasons"].append("Host action is a plan only. Recheck access, policy, budget and tool permissions before dispatch.")
     return result
 
 
