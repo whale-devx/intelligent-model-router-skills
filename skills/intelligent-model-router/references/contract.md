@@ -73,6 +73,17 @@ A sample size or confidence interval is metadata, not a guarantee of unbiased te
 Confidence intervals must enclose the observation and have both bounds or neither.
 Do not invent missing intervals, sample counts, scores, or licenses.
 
+### Source attribution
+
+For each reported cohort, `records` contains one scored observation per model
+key. If multiple sources supplied the same observation, `additional_sources`
+lists the other citations by model key, with their source IDs, URLs and stated
+licenses. Repeating an identical citation adds no entry. Each distinct
+publication retains the license statement supplied for it. Conflicting
+statements about the same observation at the same URL produce `invalid_input`.
+Check the original publication and reconcile the statements before retrying.
+Mirror citations contribute no extra vote or independent origin.
+
 ## Deterministic algorithm
 
 1. Validate the contract and unique endpoint IDs.
@@ -130,15 +141,6 @@ model key, provider, exact API ID and access state. `action` is a recommendation
 proposed host operation; `execution_status` is ALWAYS `not_executed` in this release.
 `estimated_success_probability` is always null. No fitted probability model exists.
 Rankings are quality ordered; an efficiency preference may select a different row.
-
-For each reported cohort, `records` contains one scored observation per model
-key. If multiple sources supplied the same observation, `additional_sources`
-lists the other citations by model key, with their source IDs, URLs and stated
-licenses. Repeating an identical citation adds no entry. Each distinct
-publication retains the license statement supplied for it. Conflicting
-statements about the same observation at the same URL produce `invalid_input`.
-Check the original publication and reconcile the statements before retrying.
-Mirror citations contribute no extra vote or independent origin.
 
 Exit codes: 0 selected/schema printed; 2 abstention; 1 invalid/unreadable input.
 Malformed CLI arguments use argparse's exit code 2. Default date is UTC today;
