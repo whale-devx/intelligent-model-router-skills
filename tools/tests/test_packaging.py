@@ -117,7 +117,8 @@ class PackageTests(unittest.TestCase):
         before = manifest(self.root)
         for filename in before:
             path = self.root / filename
-            path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+            lf = path.read_bytes().replace(b"\r\n", b"\n")
+            path.write_bytes(lf.replace(b"\n", b"\r\n"))
         self.assertEqual(before, manifest(self.root))
         validate_package(self.root)
 
