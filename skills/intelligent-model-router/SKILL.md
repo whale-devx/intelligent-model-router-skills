@@ -123,3 +123,5 @@ recommendations. State when the current model is retained or when evidence is ti
   explicit snapshots; read the discovery permission contract before use.
 - [Synthetic request](assets/example-request.json): reproducible demonstration only.
 - [Empty inventory](assets/inventory-template.json): a safe starting point.
+
+For pinned local leaderboard evidence, see [Arena snapshot import](references/arena.md).

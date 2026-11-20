@@ -7,7 +7,7 @@ Use official exports or authorized access only; preserve original provenance.
 
 | Source | Potential signal | Integration / rights boundary |
 | --- | --- | --- |
-| [Arena](https://arena.ai/leaderboard) / [official dataset](https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset) | Task-specific preference and agent evaluation | Dataset card declares CC BY 4.0; source-specific importer and attribution review pending |
+| [Arena](https://arena.ai/leaderboard) / [official dataset](https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset) | Task-specific preference and agent evaluation | Dataset card declares CC BY 4.0; [pinned English text importer and attribution](arena.md) |
 | [Artificial Analysis](https://artificialanalysis.ai/api-reference) | Intelligence, price and performance observations | Official API requires an account/key and attribution; review applicable data terms before reuse |
 | [Scale Labs](https://labs.scale.com/leaderboard) | Specialized coding, reasoning, agent and safety evaluations | Preserve individual benchmark version and harness; no automated connector approved here |
 | [OpenRouter Rankings](https://openrouter.ai/rankings) | Usage measured by tokens processed | Context/catalog signal only; popularity MUST NOT enter quality ranking |
@@ -32,7 +32,7 @@ safe authorization behavior. A Thai language score is not proof of Thai legal or
 accounting accuracy. A visual preference score is not accessibility conformance.
 The host should use local acceptance checks for the actual task.
 
-## Adapter contribution contract (planned)
+## Adapter contribution contract
 
 An adapter must expose its source version, permitted acquisition method, data-rights
 review, explicit identity map, original date, and normalized records conforming to
