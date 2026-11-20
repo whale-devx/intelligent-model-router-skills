@@ -1,0 +1,218 @@
+{
+  "schema_version": "1.0",
+  "host": {
+    "id": "example-host",
+    "actions": [
+      "recommend",
+      "delegate",
+      "switch"
+    ]
+  },
+  "task": {
+    "kind": "coding",
+    "language": "en",
+    "intent": "subagent",
+    "risk": "medium",
+    "required_capabilities": [
+      "text",
+      "tools"
+    ],
+    "input_tokens": 6000,
+    "output_tokens": 2000,
+    "privacy": "any",
+    "safe_boundary": true,
+    "delegation_depth": 0
+  },
+  "policy": {
+    "mode": "balanced",
+    "quality_tolerance": 0.05,
+    "max_cost_usd": 0.1,
+    "authorized_actions": [],
+    "min_sources": 2,
+    "allow_synthetic": true
+  },
+  "models": [
+    {
+      "id": "example-a",
+      "model_key": "example/example-a@fixture-config-v1",
+      "provider": "example",
+      "api_model_id": "example-a",
+      "access": "declared",
+      "observed_at": "2026-11-20",
+      "access_source": "synthetic-fixture",
+      "capabilities": [
+        "text",
+        "tools"
+      ],
+      "actions": [
+        "recommend",
+        "delegate",
+        "switch"
+      ],
+      "context_window": 32000,
+      "max_output_tokens": 8000,
+      "local": false,
+      "estimated_cost_usd": 0.04,
+      "cost_upper_bound_usd": 0.08,
+      "estimated_latency_ms": 4000
+    },
+    {
+      "id": "example-b",
+      "model_key": "example/example-b@fixture-config-v1",
+      "provider": "example",
+      "api_model_id": "example-b",
+      "access": "declared",
+      "observed_at": "2026-11-20",
+      "access_source": "synthetic-fixture",
+      "capabilities": [
+        "text",
+        "tools"
+      ],
+      "actions": [
+        "recommend",
+        "delegate",
+        "switch"
+      ],
+      "context_window": 32000,
+      "max_output_tokens": 8000,
+      "local": false,
+      "estimated_cost_usd": 0.02,
+      "cost_upper_bound_usd": 0.04,
+      "estimated_latency_ms": 2000
+    },
+    {
+      "id": "example-c",
+      "model_key": "example/example-c@fixture-config-v1",
+      "provider": "example",
+      "api_model_id": "example-c",
+      "access": "declared",
+      "observed_at": "2026-11-20",
+      "access_source": "synthetic-fixture",
+      "capabilities": [
+        "text",
+        "tools"
+      ],
+      "actions": [
+        "recommend",
+        "delegate",
+        "switch"
+      ],
+      "context_window": 32000,
+      "max_output_tokens": 8000,
+      "local": false,
+      "estimated_cost_usd": 0.005,
+      "cost_upper_bound_usd": 0.01,
+      "estimated_latency_ms": 800
+    }
+  ],
+  "evidence": [
+    {
+      "source_id": "fixture-coding",
+      "origin_id": "fixture-coding",
+      "cohort_id": "fixture-v1",
+      "model_key": "example/example-a@fixture-config-v1",
+      "task": "coding",
+      "language": "en",
+      "metric": "fixture-pass-rate",
+      "harness": "fixture-only",
+      "kind": "capability",
+      "direction": "higher",
+      "value": 0.9,
+      "sample_size": 100,
+      "observed_at": "2026-11-20",
+      "source_url": "https://example.invalid/router-fixture",
+      "license": "synthetic-project-fixture",
+      "synthetic": true
+    },
+    {
+      "source_id": "fixture-coding",
+      "origin_id": "fixture-coding",
+      "cohort_id": "fixture-v1",
+      "model_key": "example/example-b@fixture-config-v1",
+      "task": "coding",
+      "language": "en",
+      "metric": "fixture-pass-rate",
+      "harness": "fixture-only",
+      "kind": "capability",
+      "direction": "higher",
+      "value": 0.88,
+      "sample_size": 100,
+      "observed_at": "2026-11-20",
+      "source_url": "https://example.invalid/router-fixture",
+      "license": "synthetic-project-fixture",
+      "synthetic": true
+    },
+    {
+      "source_id": "fixture-coding",
+      "origin_id": "fixture-coding",
+      "cohort_id": "fixture-v1",
+      "model_key": "example/example-c@fixture-config-v1",
+      "task": "coding",
+      "language": "en",
+      "metric": "fixture-pass-rate",
+      "harness": "fixture-only",
+      "kind": "capability",
+      "direction": "higher",
+      "value": 0.7,
+      "sample_size": 100,
+      "observed_at": "2026-11-20",
+      "source_url": "https://example.invalid/router-fixture",
+      "license": "synthetic-project-fixture",
+      "synthetic": true
+    },
+    {
+      "source_id": "fixture-tools",
+      "origin_id": "fixture-tools",
+      "cohort_id": "fixture-v1",
+      "model_key": "example/example-a@fixture-config-v1",
+      "task": "coding",
+      "language": "en",
+      "metric": "fixture-pass-rate",
+      "harness": "fixture-only",
+      "kind": "capability",
+      "direction": "higher",
+      "value": 0.8,
+      "sample_size": 100,
+      "observed_at": "2026-11-20",
+      "source_url": "https://example.invalid/router-fixture",
+      "license": "synthetic-project-fixture",
+      "synthetic": true
+    },
+    {
+      "source_id": "fixture-tools",
+      "origin_id": "fixture-tools",
+      "cohort_id": "fixture-v1",
+      "model_key": "example/example-b@fixture-config-v1",
+      "task": "coding",
+      "language": "en",
+      "metric": "fixture-pass-rate",
+      "harness": "fixture-only",
+      "kind": "capability",
+      "direction": "higher",
+      "value": 0.84,
+      "sample_size": 100,
+      "observed_at": "2026-11-20",
+      "source_url": "https://example.invalid/router-fixture",
+      "license": "synthetic-project-fixture",
+      "synthetic": true
+    },
+    {
+      "source_id": "fixture-tools",
+      "origin_id": "fixture-tools",
+      "cohort_id": "fixture-v1",
+      "model_key": "example/example-c@fixture-config-v1",
+      "task": "coding",
+      "language": "en",
+      "metric": "fixture-pass-rate",
+      "harness": "fixture-only",
+      "kind": "capability",
+      "direction": "higher",
+      "value": 0.6,
+      "sample_size": 100,
+      "observed_at": "2026-11-20",
+      "source_url": "https://example.invalid/router-fixture",
+      "license": "synthetic-project-fixture",
+      "synthetic": true
+    }
+  ]
+}

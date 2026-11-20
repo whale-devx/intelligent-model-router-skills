@@ -1,0 +1,388 @@
+"""Offline contract, policy, ranking, and packaging regression tests.
+
+All model names and numbers are synthetic. Action tests clear the synthetic
+marker ONLY to exercise the contract; this is not evidence about a real model.
+"""
+from __future__ import annotations
+
+import ast
+import copy
+import json
+import re
+import subprocess
+import sys
+import tempfile
+import unittest
+from datetime import date
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SKILL = ROOT / "skills" / "intelligent-model-router"
+SCRIPTS = SKILL / "scripts"
+sys.path.insert(0, str(SCRIPTS))
+from route import InputError, REQUEST_SCHEMA, route, validate  # noqa: E402
+from discover import normalize  # noqa: E402
+
+TODAY = date(2026, 11, 20)
+
+
+class RoutingTests(unittest.TestCase):
+    def setUp(self):
+        self.request = json.loads((SKILL / "assets" / "example-request.json").read_text())
+
+    def run_route(self):
+        return route(self.request, TODAY)
+
+    def action_fixture(self):
+        self.request["policy"]["authorized_actions"] = ["delegate", "switch", "invoke"]
+        for model in self.request["models"]:
+            model["access"] = "verified"
+        for row in self.request["evidence"]:
+            row["synthetic"] = False
+
+    def test_example_balanced(self):
+        result = self.run_route()
+        self.assertEqual(result["selected"]["id"], "example-b")
+        self.assertEqual(result["action"], "recommend")
+        self.assertEqual(result["execution_status"], "not_executed")
+        self.assertIsNone(result["estimated_success_probability"])
+
+    def test_quality_mode_deterministic_tie(self):
+        self.request["policy"]["mode"] = "quality"
+        self.assertEqual(self.run_route()["selected"]["id"], "example-a")
+
+    def test_current_model_wins_quality_tie(self):
+        self.request["policy"]["mode"] = "quality"
+        self.request["task"]["current_candidate_id"] = "example-b"
+        self.assertEqual(self.run_route()["selected"]["id"], "example-b")
+
+    def test_economy_respects_quality_tolerance(self):
+        self.request["policy"].update(mode="economy", quality_tolerance=0)
+        self.assertEqual(self.run_route()["selected"]["id"], "example-b")
+        self.request["policy"]["quality_tolerance"] = 1
+        self.assertEqual(self.run_route()["selected"]["id"], "example-c")
+
+    def test_latency_mode(self):
+        self.request["policy"].update(mode="latency", quality_tolerance=1)
+        self.assertEqual(self.run_route()["selected"]["id"], "example-c")
+
+    def test_unknown_cost_is_not_free(self):
+        self.request["models"][1].pop("estimated_cost_usd")
+        self.assertEqual(self.run_route()["selected"]["id"], "example-a")
+
+    def test_no_inventory(self):
+        self.request["models"] = []
+        self.assertEqual(self.run_route()["status"], "needs_inventory")
+
+    def test_access_gates(self):
+        for state in ("listed", "unknown", "unavailable"):
+            with self.subTest(state=state):
+                for model in self.request["models"]:
+                    model["access"] = state
+                self.assertEqual(self.run_route()["status"], "no_eligible_models")
+
+    def test_empty_provider_allowlist_denies_all(self):
+        self.request["policy"]["allowed_providers"] = []
+        self.assertEqual(self.run_route()["status"], "no_eligible_models")
+
+    def test_local_only_rejects_cloud_and_unknown(self):
+        self.request["task"]["privacy"] = "local-only"
+        self.request["models"][1]["local"] = None
+        self.assertEqual(self.run_route()["status"], "no_eligible_models")
+        self.request["models"][1]["local"] = True
+        self.assertEqual(self.run_route()["selected"]["id"], "example-b")
+
+    def test_context_includes_output_reserve(self):
+        self.request["task"].update(input_tokens=31000, output_tokens=2000)
+        self.assertEqual(self.run_route()["status"], "no_eligible_models")
+
+    def test_output_capacity(self):
+        self.request["task"]["output_tokens"] = 9000
+        self.assertEqual(self.run_route()["status"], "no_eligible_models")
+
+    def test_unknown_context_fails_closed(self):
+        for model in self.request["models"]:
+            model["context_window"] = None
+        self.assertEqual(self.run_route()["status"], "no_eligible_models")
+
+    def test_tool_capability_required(self):
+        self.request["task"]["required_capabilities"].append("computer-use")
+        self.assertEqual(self.run_route()["status"], "no_eligible_models")
+
+    def test_budget_requires_upper_bound(self):
+        for model in self.request["models"]:
+            model.pop("cost_upper_bound_usd")
+        self.assertEqual(self.run_route()["status"], "no_eligible_models")
+
+    def test_budget_and_latency_filters(self):
+        self.request["policy"].update(max_cost_usd=0.011, max_latency_ms=1000)
+        self.assertEqual(self.run_route()["selected"]["id"], "example-c")
+
+    def test_cost_estimate_cannot_exceed_bound(self):
+        self.request["models"][0]["cost_upper_bound_usd"] = 0
+        with self.assertRaises(InputError):
+            self.run_route()
+
+    def test_stale_and_future_inventory(self):
+        for stamp in ("2026-01-01", "2026-11-21"):
+            with self.subTest(stamp=stamp):
+                for model in self.request["models"]:
+                    model["observed_at"] = stamp
+                self.assertEqual(self.run_route()["status"], "no_eligible_models")
+
+    def test_stale_and_future_evidence(self):
+        for stamp in ("2026-01-01", "2026-11-21"):
+            with self.subTest(stamp=stamp):
+                for row in self.request["evidence"]:
+                    row["observed_at"] = stamp
+                self.assertEqual(self.run_route()["status"], "insufficient_evidence")
+
+    def test_popularity_never_used_as_quality(self):
+        for row in self.request["evidence"]:
+            row["kind"] = "popularity"
+        self.assertEqual(self.run_route()["status"], "insufficient_evidence")
+
+    def test_language_and_task_match_exactly(self):
+        for key, value in (("language", "th"), ("kind", "research")):
+            original = self.request["task"][key]
+            self.request["task"][key] = value
+            self.assertEqual(self.run_route()["status"], "insufficient_evidence")
+            self.request["task"][key] = original
+
+    def test_missing_evidence_abstains(self):
+        self.request["evidence"] = []
+        result = self.run_route()
+        self.assertEqual(result["status"], "insufficient_evidence")
+        self.assertIsNone(result["selected"])
+        self.assertTrue(all(r["quality_score"] is None for r in result["rankings"]))
+
+    def test_partial_cohort_not_imputed(self):
+        self.request["evidence"].pop()
+        self.assertEqual(self.run_route()["status"], "insufficient_evidence")
+
+    def test_model_identity_exact_no_fuzzy_match(self):
+        self.request["models"][0]["model_key"] += "-other-effort"
+        self.assertEqual(self.run_route()["status"], "insufficient_evidence")
+
+    def test_mirror_does_not_inflate_evidence(self):
+        before = self.run_route()
+        mirror = copy.deepcopy(self.request["evidence"])
+        for row in mirror:
+            row["source_id"] = "mirror"
+        self.request["evidence"].extend(mirror)
+        after = self.run_route()
+        self.assertEqual(before["rankings"], after["rankings"])
+        self.assertEqual(len(after["evidence"]), 2)
+        self.assertEqual(after["ignored_evidence"]["duplicate_origin_record"], 6)
+
+    def test_conflicting_duplicate_rejected(self):
+        row = copy.deepcopy(self.request["evidence"][0])
+        row["value"] = 999
+        self.request["evidence"].append(row)
+        with self.assertRaises(InputError):
+            self.run_route()
+
+    def test_latest_complete_cohort_per_origin(self):
+        older = copy.deepcopy(self.request["evidence"])
+        for row in older:
+            row.update(cohort_id="old-v1", observed_at="2026-11-01", value=1-row["value"])
+        self.request["evidence"].extend(older)
+        self.assertEqual(self.run_route()["selected"]["id"], "example-b")
+        self.assertEqual(len(self.run_route()["evidence"]), 2)
+
+    def test_duplicate_endpoint_same_model_not_extra_vote(self):
+        before = self.run_route()["rankings"][0]["quality_score"]
+        model = copy.deepcopy(self.request["models"][0])
+        model["id"] = "second-endpoint"
+        self.request["models"].append(model)
+        self.assertEqual(self.run_route()["rankings"][0]["quality_score"], before)
+
+    def test_overlap_intervals_create_ties(self):
+        for row in self.request["evidence"]:
+            row.update(ci_lower=0, ci_upper=1)
+        self.assertTrue(all(r["quality_score"] == .5 for r in self.run_route()["rankings"]))
+
+    def test_invalid_interval(self):
+        self.request["evidence"][0].update(ci_lower=.95, ci_upper=1)
+        with self.assertRaises(InputError):
+            self.run_route()
+
+    def test_lower_is_better(self):
+        for row in self.request["evidence"]:
+            row["direction"] = "lower"
+        self.assertEqual(self.run_route()["selected"]["id"], "example-c")
+
+    def test_inconsistent_metric_direction(self):
+        self.request["evidence"][0]["direction"] = "lower"
+        with self.assertRaises(InputError):
+            self.run_route()
+
+    def test_synthetic_opt_in_and_execution_block(self):
+        self.request["policy"]["allow_synthetic"] = False
+        self.assertEqual(self.run_route()["status"], "insufficient_evidence")
+        self.request["policy"]["allow_synthetic"] = True
+        self.request["policy"]["authorized_actions"] = ["delegate"]
+        for m in self.request["models"]:
+            m["access"] = "verified"
+        self.assertEqual(self.run_route()["action"], "recommend")
+
+    def test_declared_access_never_plans_execution(self):
+        self.action_fixture()
+        for m in self.request["models"]:
+            m["access"] = "declared"
+        self.assertEqual(self.run_route()["action"], "recommend")
+
+    def test_subagent_plan_requires_three_way_permission(self):
+        self.action_fixture()
+        self.assertEqual(self.run_route()["action"], "delegate")
+        for location, field in ((self.request["host"], "actions"),
+                                (self.request["policy"], "authorized_actions"),
+                                (self.request["models"][1], "actions")):
+            previous = location[field]
+            location[field] = []
+            self.assertEqual(self.run_route()["action"], "recommend")
+            location[field] = previous
+
+    def test_high_risk_requires_approval(self):
+        self.action_fixture()
+        for risk in ("high", "critical"):
+            self.request["task"]["risk"] = risk
+            self.assertTrue(self.run_route()["requires_approval"])
+
+    def test_auto_switch_requires_boundary(self):
+        self.action_fixture()
+        self.request["task"].update(intent="auto", safe_boundary=True)
+        self.assertEqual(self.run_route()["action"], "switch")
+        self.request["task"]["safe_boundary"] = False
+        self.assertEqual(self.run_route()["action"], "recommend")
+
+    def test_no_unnecessary_switch(self):
+        self.action_fixture()
+        self.request["task"].update(intent="auto", current_candidate_id="example-b")
+        self.assertEqual(self.run_route()["action"], "recommend")
+
+    def test_depth_cap_for_subagent_and_auto(self):
+        self.action_fixture()
+        self.request["host"]["actions"] = ["delegate"]
+        self.request["task"]["delegation_depth"] = 1
+        for intent in ("subagent", "auto"):
+            self.request["task"]["intent"] = intent
+            self.assertEqual(self.run_route()["action"], "recommend")
+
+    def test_input_order_does_not_change_selection(self):
+        before = self.run_route()
+        self.request["models"].reverse()
+        self.request["evidence"].reverse()
+        self.assertEqual(before, self.run_route())
+
+    def test_invalid_scalar_and_unknown_fields(self):
+        for value in (True, -1, float("inf"), float("nan"), "0.1"):
+            self.request["policy"]["max_cost_usd"] = value
+            with self.subTest(value=value), self.assertRaises(InputError):
+                self.run_route()
+        self.request["policy"].pop("max_cost_usd")
+        self.request["api_key"] = "not-a-real-secret"
+        with self.assertRaises(InputError):
+            self.run_route()
+
+    def test_duplicate_candidates_rejected(self):
+        self.request["models"].append(copy.deepcopy(self.request["models"][0]))
+        with self.assertRaises(InputError):
+            self.run_route()
+
+    def test_unsafe_source_urls_rejected(self):
+        for url in ("http://example.com", "https://user:password@example.com", "https://example.com/?key=secret"):
+            self.request["evidence"][0]["source_url"] = url
+            with self.assertRaises(InputError):
+                self.run_route()
+
+    def test_request_not_mutated(self):
+        before = copy.deepcopy(self.request)
+        self.run_route()
+        self.assertEqual(self.request, before)
+
+
+class DiscoveryAndPackagingTests(unittest.TestCase):
+    def test_catalog_does_not_grant_access(self):
+        result = normalize({"data": [{"id": "example-model", "api_key": "discard-this"}]},
+                           "openai-list", "example", "2026-11-20")
+        model = result["models"][0]
+        self.assertEqual(model["access"], "listed")
+        self.assertEqual(model["capabilities"], [])
+        self.assertIsNone(model["local"])
+        self.assertNotIn("discard-this", json.dumps(result))
+
+    def test_ollama_import_is_listed_not_verified(self):
+        result = normalize({"models": [{"name": "example:latest"}]}, "ollama-tags", "local", "2026-11-20")
+        self.assertTrue(result["models"][0]["local"])
+        self.assertEqual(result["models"][0]["access"], "listed")
+
+    def test_empty_manual_inventory(self):
+        self.assertEqual(normalize({"models": []}, "inventory", "manual", "2026-11-20"), {"models": []})
+
+    def test_discovery_rejects_duplicate_ids(self):
+        with self.assertRaises(InputError):
+            normalize({"data": [{"id": "x"}, {"id": "x"}]}, "openai-list", "x", "2026-11-20")
+
+    def test_skill_manifest_and_local_links(self):
+        text = (SKILL / "SKILL.md").read_text()
+        header = text.split("---", 2)[1]
+        fields = dict(line.split(": ", 1) for line in header.strip().splitlines())
+        self.assertEqual(fields["name"], SKILL.name)
+        self.assertTrue(1 <= len(fields["description"]) <= 1024)
+        self.assertLess(len(text.splitlines()), 200)
+        self.assertNotIn("allowed-tools", fields)
+        for target in re.findall(r"\]\(([^)]+)\)", text):
+            if "://" not in target and not target.startswith("#"):
+                self.assertTrue((SKILL / target).is_file(), target)
+
+    def test_core_has_no_execution_or_network_imports(self):
+        for path in SCRIPTS.glob("*.py"):
+            tree = ast.parse(path.read_text())
+            modules = [n.module or "" for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)]
+            modules += [a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names]
+            self.assertFalse(set(modules) & {"subprocess", "socket", "requests", "urllib.request", "os"})
+
+    def test_cli_schema(self):
+        completed = subprocess.run([sys.executable, str(SCRIPTS / "route.py"), "--schema"],
+                                   capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(completed.stdout), REQUEST_SCHEMA)
+
+    def test_cli_duplicate_keys_and_redacted_error(self):
+        completed = subprocess.run([sys.executable, str(SCRIPTS / "route.py"), "--input", "-"],
+                                   input='{"api_key":"do-not-echo", "api_key":"secret"}',
+                                   capture_output=True, text=True)
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(json.loads(completed.stdout)["status"], "invalid_input")
+        self.assertNotIn("do-not-echo", completed.stdout + completed.stderr)
+
+    def test_cli_example(self):
+        completed = subprocess.run([sys.executable, str(SCRIPTS / "route.py"), "--input",
+                                   str(SKILL / "assets" / "example-request.json"), "--as-of", "2026-11-20"],
+                                   capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(completed.stdout)["selected"]["id"], "example-b")
+
+    def test_cli_discovery(self):
+        completed = subprocess.run([sys.executable, str(SCRIPTS / "discover.py"), "--input", "-",
+                                   "--format", "openai-list", "--provider", "example", "--observed-at", "2026-11-20"],
+                                   input='{"data":[{"id":"fixture"}]}', capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(completed.stdout)["models"][0]["access"], "listed")
+
+    def test_cli_oversized_input(self):
+        completed = subprocess.run([sys.executable, str(SCRIPTS / "route.py"), "--input", "-"],
+                                   input=" " * (2 * 1024 * 1024 + 1), capture_output=True, text=True)
+        self.assertEqual(completed.returncode, 1)
+
+    def test_only_skill_folder_needed(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as directory:
+            installed = Path(directory) / "intelligent-model-router"
+            shutil.copytree(SKILL, installed)
+            completed = subprocess.run([sys.executable, str(installed / "scripts" / "route.py"), "--input",
+                                       str(installed / "assets" / "example-request.json"), "--as-of", "2026-11-20"],
+                                       cwd=directory, capture_output=True, text=True, check=True)
+            self.assertEqual(json.loads(completed.stdout)["execution_status"], "not_executed")
+
+
+if __name__ == "__main__":
+    unittest.main()
