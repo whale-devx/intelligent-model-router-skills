@@ -1,3 +1,5 @@
+[Installation for Codex, Claude Code, Cursor, Gemini CLI, Kiro and API clients](docs/PORTABILITY.md)
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner-light.svg">
