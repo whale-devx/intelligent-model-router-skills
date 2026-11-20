@@ -35,6 +35,8 @@
 npx skills add whale-devx/intelligent-model-router-skills --skill intelligent-model-router
 ```
 
+[วิธีติดตั้งสำหรับแต่ละเอเจนต์และการใช้งานผ่าน API (ภาษาอังกฤษ)](PORTABILITY.md)
+
 ใช้ Node.js รุ่นที่ [Skills CLI รองรับ](https://github.com/vercel-labs/skills#install-a-skill)
 ไม่ต้องมี Python หากใช้เฉพาะคำสั่งและแนวทางใน Skill
 

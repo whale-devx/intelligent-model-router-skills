@@ -35,6 +35,8 @@ Run this in your project, then choose your agent in the installer:
 npx skills add whale-devx/intelligent-model-router-skills --skill intelligent-model-router
 ```
 
+[Installation for Codex, Claude Code, Cursor, Gemini CLI, Kiro CLI and API clients](docs/PORTABILITY.md)
+
 Use a Node.js version supported by the [Skills CLI](https://github.com/vercel-labs/skills#install-a-skill).
 Python is **not** required for the instruction-only workflow.
 
