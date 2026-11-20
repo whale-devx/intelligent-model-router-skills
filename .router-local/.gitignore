@@ -1,0 +1,3 @@
+# Personal inventories, requests, and private evaluation exports stay local.
+*
+!.gitignore
