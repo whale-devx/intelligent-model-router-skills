@@ -192,7 +192,7 @@ def server(body=None, status=200, headers=None, delay=0):
                     self.send_header(k, v)
                 self.end_headers()
                 self.wfile.write(raw)
-            except (BrokenPipeError, ConnectionResetError):
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
                 pass
         def log_message(self, *args):
             pass
@@ -294,7 +294,21 @@ class TransportTests(unittest.TestCase):
             port = sock.getsockname()[1]
             with self.assertRaises(d.DiscoveryError) as caught:
                 d.fetch_listing(f"http://127.0.0.1:{port}", "ollama", allow_network=True, timeout=0.2)
+            # Winsock may time out instead of refusing a bound-but-not-listening port.
+            self.assertIn(caught.exception.code, ("unavailable", "timeout"))
+
+    def test_explicit_connection_refusal_does_not_retry_or_send_request(self):
+        with patch.object(d.http.client, "HTTPConnection") as factory:
+            conn = factory.return_value
+            conn.connect.side_effect = ConnectionRefusedError("synthetic-private-error")
+            with self.assertRaises(d.DiscoveryError) as caught:
+                d.fetch_listing("http://127.0.0.1:1234", "ollama", allow_network=True)
             self.assertEqual(caught.exception.code, "unavailable")
+            self.assertNotIn("synthetic-private-error", str(caught.exception))
+            factory.assert_called_once()
+            conn.connect.assert_called_once()
+            conn.request.assert_not_called()
+            conn.close.assert_called_once()
 
     def test_strict_json_duplicate_nonfinite_invalid_utf8(self):
         for raw in (b'{"data":[],"data":[]}', b'{"n":NaN}', b'{"n":Infinity}', b'{"n":1e999}', b'\xff', b'not-json'):
