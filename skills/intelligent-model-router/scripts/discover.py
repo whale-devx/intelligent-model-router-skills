@@ -29,7 +29,7 @@ def normalize(data: dict, format_name: str, provider: str, observed_at: str) -> 
                      "observed_at": observed_at, "access_source": "user-provided-catalog",
                      "capabilities": [], "actions": ["recommend"],
                      "context_window": None, "max_output_tokens": None,
-                     "local": True if format_name == "ollama-tags" else None}
+                     "local": None}
             validate(model, MODEL)
             models.append(model)
     if len(models) > 256 or len({m["id"] for m in models}) != len(models):
