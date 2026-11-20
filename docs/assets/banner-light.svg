@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">Your models. One clear decision.</title>
+  <desc id="desc">A portable Agent Skill. Available model nodes connect to a routing decision, then to a recommendation or an authorized host handoff. This is a conceptual diagram, not an execution result.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#f6f8fa"/><stop offset="1" stop-color="#e7f6ef"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="300" rx="20" fill="url(#background)"/>
+  <rect x="0" y="32" width="5" height="236" rx="2.5" fill="#096c54"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="44" y="52" fill="#096c54" font-size="15" font-weight="700" letter-spacing="2.2">INTELLIGENT MODEL ROUTER</text>
+    <text x="42" y="126" fill="#162b3d" font-size="55" font-weight="700">Your models.</text>
+    <text x="42" y="190" fill="#162b3d" font-size="55" font-weight="700">One clear decision.</text>
+    <text x="44" y="250" fill="#405569" font-size="20">A portable Agent Skill. Not another gateway.</text>
+    <g fill="none" stroke="#8ea8bc" stroke-width="2.5">
+      <path d="M676 80 H714 Q738 80 738 104 V126 Q738 150 766 150 H794"/>
+      <path d="M676 150 H794"/>
+      <path d="M676 220 H714 Q738 220 738 196 V174 Q738 150 766 150"/>
+      <path d="M866 150 H891 Q916 150 916 126 V112 Q916 98 940 98 H956"/>
+      <path d="M866 150 H891 Q916 150 916 174 V188 Q916 202 940 202 H956" stroke-dasharray="6 6"/>
+    </g>
+    <g fill="#ffffff" stroke="#8ea8bc" stroke-width="2">
+      <rect x="612" y="58" width="64" height="44" rx="12"/>
+      <rect x="612" y="128" width="64" height="44" rx="12"/>
+      <rect x="612" y="198" width="64" height="44" rx="12"/>
+    </g>
+    <g fill="#096c54"><circle cx="644" cy="80" r="6"/><circle cx="644" cy="150" r="6"/><circle cx="644" cy="220" r="6"/></g>
+    <rect x="794" y="114" width="72" height="72" rx="21" fill="#ddf5ec" stroke="#096c54" stroke-width="2"/>
+    <path d="M812 150 H842 M832 140 L842 150 L832 160" fill="none" stroke="#096c54" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="956" y="73" width="204" height="50" rx="12" fill="#ffffff" stroke="#8ea8bc"/>
+    <rect x="956" y="177" width="204" height="50" rx="12" fill="#ffffff" stroke="#8ea8bc"/>
+    <text x="1058" y="105" text-anchor="middle" fill="#162b3d" font-size="19">Recommend</text>
+    <text x="1058" y="209" text-anchor="middle" fill="#162b3d" font-size="19">Host handoff</text>
+    <text x="830" y="221" text-anchor="middle" fill="#405569" font-size="15">Evidence + policy</text>
+    <text x="1058" y="251" text-anchor="middle" fill="#405569" font-size="14">Only when authorized</text>
+  </g>
+</svg>
