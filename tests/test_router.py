@@ -8,6 +8,7 @@ from __future__ import annotations
 import ast
 import copy
 import json
+import os
 import re
 import subprocess
 import sys
@@ -163,6 +164,44 @@ class RoutingTests(unittest.TestCase):
     def test_model_identity_exact_no_fuzzy_match(self):
         self.request["models"][0]["model_key"] += "-other-effort"
         self.assertEqual(self.run_route()["status"], "insufficient_evidence")
+
+    def test_coverage_distinguishes_absent_identities_from_disjoint_cohorts(self):
+        missing = self.request["models"][0]["model_key"]
+        self.request["models"].append(dict(self.request["models"][0], id="alternate-endpoint"))
+        for row in self.request["evidence"]:
+            if row["model_key"] == missing:
+                row["observed_at"] = "2020-01-01"
+        coverage = self.run_route()["evidence_coverage"]
+        self.assertEqual(coverage, {"eligible_identities": 3, "missing_model_keys": [missing],
+                                    "incomplete_cohorts": 2, "complete_origins": 0, "required_origins": 2})
+        # A fresh observation in another harness covers this identity alone.
+        self.request["evidence"].append(dict(self.request["evidence"][0], harness="other",
+                                             observed_at=TODAY.isoformat()))
+        result = self.run_route()
+        self.assertEqual(result["evidence_coverage"], dict(coverage, missing_model_keys=[], incomplete_cohorts=3))
+        self.assertEqual(result["status"], "insufficient_evidence")
+        self.assertIsNone(result["selected"])
+        self.assertTrue(all(row["quality_score"] is None for row in result["rankings"]))
+
+    def test_coverage_counts_origins_and_filters_ineligible_models(self):
+        self.request["models"][2]["access"] = "listed"
+        self.request["policy"]["min_sources"] = 3
+        self.request["evidence"] += [dict(r, source_id="mirror") for r in self.request["evidence"]]
+        self.assertEqual(self.run_route()["evidence_coverage"],
+                         {"eligible_identities": 2, "missing_model_keys": [], "incomplete_cohorts": 0,
+                          "complete_origins": 2, "required_origins": 3})
+        self.request["evidence"] = []
+        self.assertEqual(self.run_route()["evidence_coverage"]["missing_model_keys"],
+                         sorted(m["model_key"] for m in self.request["models"][:2]))
+
+    def test_coverage_preserves_unicode_identity_through_cli_pipe(self):
+        missing = "ตัวอย่าง/รุ่น-🌙"
+        self.request["models"][0]["model_key"] = missing
+        result = subprocess.run([sys.executable, str(SCRIPTS / "route.py"), "--input", "-",
+                                 "--as-of", TODAY.isoformat()], input=json.dumps(self.request).encode(),
+                                capture_output=True, env={**os.environ, "PYTHONIOENCODING": "ascii:strict"})
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertEqual(json.loads(result.stdout)["evidence_coverage"]["missing_model_keys"], [missing])
 
     def test_matching_discovery_placeholders_cannot_supply_quality(self):
         model = self.request["models"][0]

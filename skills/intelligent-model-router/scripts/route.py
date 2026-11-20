@@ -180,7 +180,7 @@ def eligibility(model: dict, task: dict, policy: dict, today: date) -> list[str]
 
 
 def common_evidence(records: list[dict], keys: set[str], task: dict, policy: dict,
-                    today: date) -> tuple[list[dict], dict[str, int]]:
+                    today: date) -> tuple[list[dict], dict[str, int], dict | None]:
     """Keep complete, comparable cohorts; one latest cohort per evidence origin."""
     groups: dict[tuple, dict[str, dict]] = defaultdict(dict)
     ignored: dict[str, int] = defaultdict(int)
@@ -229,7 +229,18 @@ def common_evidence(records: list[dict], keys: set[str], task: dict, policy: dic
         group, rows = options[-1]
         ignored["superseded_cohort"] += sum(len(r) for _, r in options[:-1])
         chosen.append({"origin_id": origin, "cohort_id": group[1], "rows": rows})
-    return chosen, {k: v for k, v in sorted(ignored.items()) if v}
+    coverage = None
+    required = policy.get("min_sources", 1)
+    if len(chosen) < required:
+        observed = {key for rows in groups.values() for key in rows}
+        coverage = {
+            "eligible_identities": len(keys),
+            "missing_model_keys": sorted(keys - observed),
+            "incomplete_cohorts": sum(len(rows) < len(keys) for rows in groups.values()),
+            "complete_origins": len(chosen),
+            "required_origins": required,
+        }
+    return chosen, {k: v for k, v in sorted(ignored.items()) if v}, coverage
 
 
 def pair_score(left: dict, right: dict) -> float:
@@ -272,12 +283,13 @@ def route(request: dict, today: date | None = None) -> dict:
     if not eligible:
         return result
     keys = {m["model_key"] for m in eligible}
-    cohorts, ignored = common_evidence(request["evidence"], keys, task, policy, today)
+    cohorts, ignored, coverage = common_evidence(request["evidence"], keys, task, policy, today)
     result["ignored_evidence"] = ignored
     result["evidence"] = [{"origin_id": c["origin_id"], "cohort_id": c["cohort_id"],
                            "records": [c["rows"][k] for k in sorted(keys)]} for c in cohorts]
-    if len(cohorts) < policy.get("min_sources", 1):
+    if coverage is not None:
         result["status"] = "insufficient_evidence"
+        result["evidence_coverage"] = coverage
         if any(key.startswith(UNMAPPED_PREFIX) for key in keys):
             result["reasons"].append("At least one eligible endpoint still needs a benchmark configuration mapping.")
         result["rankings"] = [{"id": m["id"], "quality_score": None} for m in sorted(eligible, key=lambda x: x["id"])]
@@ -372,7 +384,7 @@ def main() -> int:
     try:
         today = date.fromisoformat(args.as_of) if args.as_of else None
         result = route(read_request(args.input), today)
-        print(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False))
+        print(json.dumps(result, indent=2, allow_nan=False))
         return 0 if result["status"] == "selected" else 2
     except (InputError, ValueError, OSError, RecursionError, OverflowError):
         # Do not echo attacker-controlled input, filesystem paths, or secrets.

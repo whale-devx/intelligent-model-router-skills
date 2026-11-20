@@ -134,3 +134,19 @@ Rankings are quality ordered; an efficiency preference may select a different ro
 Exit codes: 0 selected/schema printed; 2 abstention; 1 invalid/unreadable input.
 Malformed CLI arguments use argparse's exit code 2. Default date is UTC today;
 `--as-of YYYY-MM-DD` is for reproducible replay, not falsifying live freshness.
+
+### Diagnosing insufficient evidence
+
+For `insufficient_evidence`, inspect `evidence_coverage` before adding another source.
+It counts distinct eligible model keys and lists those with no matching observation
+in `missing_model_keys`. Observations must pass the task, language, identity,
+freshness and source-policy filters. Duplicate endpoints for one key count once.
+Keep private configuration keys out of any shared report.
+
+If the list is empty, compare `complete_origins` with `required_origins`.
+For example, one evaluation might cover models A and B while another covers
+only C. All three identities have evidence, yet neither cohort compares all
+three. In that case `incomplete_cohorts` is 2 and `complete_origins` is 0.
+A cohort enters the count when at least one eligible observation survives.
+Mirrors of the same origin cannot meet a requirement for a second origin.
+Collect matching evidence for the intended inventory before retrying.

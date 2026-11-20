@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Explain evidence-related abstention with the missing model keys and the
+  number of independent origins covering the eligible inventory.
+
 - Include a copyable Arena attribution notice in normalized reports. It links
   to the pinned dataset and license and describes the import transformation.
 
