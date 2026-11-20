@@ -37,6 +37,7 @@ class RoutingTests(unittest.TestCase):
         self.request["policy"]["authorized_actions"] = ["delegate", "switch", "invoke"]
         for model in self.request["models"]:
             model["access"] = "verified"
+            model["access_source"] = "test-host-access-record"
         for row in self.request["evidence"]:
             row["synthetic"] = False
 
@@ -80,6 +81,33 @@ class RoutingTests(unittest.TestCase):
                 for model in self.request["models"]:
                     model["access"] = state
                 self.assertEqual(self.run_route()["status"], "no_eligible_models")
+
+    def test_access_claim_needs_a_source_even_when_all_other_evidence_matches(self):
+        self.action_fixture()
+        for model in self.request["models"]:
+            model["access_source"] = "   "
+        decision = self.run_route()
+        self.assertEqual(decision["status"], "no_eligible_models")
+        self.assertTrue(all("access_source_missing" in row["reasons"] for row in decision["excluded"]))
+
+    def test_demo_inventory_cannot_plan_delegation_with_otherwise_eligible_evidence(self):
+        self.action_fixture()
+        for model in self.request["models"]:
+            model["access_source"] = "synthetic-fixture"
+        decision = self.run_route()
+        self.assertEqual((decision["status"], decision["action"]), ("selected", "recommend"))
+        self.assertTrue(any("synthetic" in warning.lower() for warning in decision["warnings"]))
+
+    def test_catalog_claim_excludes_only_its_endpoint(self):
+        self.action_fixture()
+        previous = self.run_route()["selected"]["id"]
+        for model in self.request["models"]:
+            if model["id"] == previous:
+                model["access_source"] = "user-provided-catalog"
+        decision = self.run_route()
+        self.assertNotEqual(decision["selected"]["id"], previous)
+        self.assertEqual(decision["excluded"], [{"id": previous, "reasons": ["access_source_catalog_only"]}])
+        self.assertEqual((decision["action"], decision["execution_status"]), ("delegate", "not_executed"))
 
     def test_empty_provider_allowlist_denies_all(self):
         self.request["policy"]["allowed_providers"] = []
@@ -367,6 +395,27 @@ class DiscoveryAndPackagingTests(unittest.TestCase):
                                    "--format", "openai-list", "--provider", "example", "--observed-at", "2026-11-20"],
                                    input='{"data":[{"id":"fixture"}]}', capture_output=True, text=True, check=True)
         self.assertEqual(json.loads(completed.stdout)["models"][0]["access"], "listed")
+
+    def test_cli_raw_catalog_requires_its_original_date(self):
+        for fmt, catalog in (("openai-list", {"data": [{"id": "fixture"}]}),
+                             ("ollama-tags", {"models": [{"name": "fixture"}]})):
+            with self.subTest(fmt=fmt):
+                args = [sys.executable, str(SCRIPTS / "discover.py"), "--format", fmt, "--input", "-"]
+                undated = subprocess.run(args, input=json.dumps(catalog), capture_output=True, text=True)
+                self.assertNotEqual(undated.returncode, 0)
+                self.assertIn("--observed-at", undated.stdout + undated.stderr)
+                self.assertNotIn("models", json.loads(undated.stdout))
+                dated = subprocess.run([*args, "--observed-at", "2021-02-03"], input=json.dumps(catalog),
+                                       capture_output=True, text=True, check=True)
+                self.assertEqual(json.loads(dated.stdout)["models"][0]["observed_at"], "2021-02-03")
+
+    def test_cli_normalized_inventory_preserves_dates_without_an_import_date(self):
+        models = json.loads((SKILL / "assets/example-request.json").read_text())["models"][:2]
+        models[0]["observed_at"] = "2021-02-03"
+        for extra in ([], ["--observed-at", "2026-11-20"]):
+            args = [sys.executable, str(SCRIPTS / "discover.py"), "--format", "inventory", "--input", "-", *extra]
+            imported = subprocess.run(args, input=json.dumps({"models": models}), capture_output=True, text=True, check=True)
+            self.assertEqual(json.loads(imported.stdout)["models"], models)
 
     def test_cli_oversized_input(self):
         completed = subprocess.run([sys.executable, str(SCRIPTS / "route.py"), "--input", "-"],

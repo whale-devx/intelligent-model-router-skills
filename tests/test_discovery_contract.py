@@ -54,6 +54,22 @@ class DiscoveryContractTests(unittest.TestCase):
         models = d.normalize({"models": []}, "ollama", "synthetic-host", TODAY)["inventory"]["models"]
         self.assertEqual(route(self.request(models))["status"], "needs_inventory")
 
+    def test_changing_access_alone_cannot_promote_any_bundled_catalog_source(self):
+        imports = [
+            d.normalize(opencode(), "opencode-v2", "synthetic-host", TODAY)["inventory"],
+            d.normalize(ollama(), "ollama", "synthetic-host", TODAY)["inventory"],
+            import_catalog({"data": [{"id": "fixture"}]}, "openai-list", "example", TODAY),
+            import_catalog(ollama(), "ollama-tags", "ollama", TODAY),
+        ]
+        for inventory in imports:
+            for access in ("declared", "verified"):
+                model = dict(inventory["models"][0], access=access)
+                with self.subTest(source=model["access_source"], access=access):
+                    result = route(self.request([model]), date.fromisoformat(TODAY))
+                    self.assertEqual(result["status"], "no_eligible_models")
+                    self.assertIsNone(result["selected"])
+                    self.assertIn("access_source_catalog_only", result["excluded"][0]["reasons"])
+
     def test_legacy_offline_ollama_import_does_not_assert_local_execution(self):
         models = import_catalog(ollama(), "ollama-tags", "ollama", TODAY)["models"]
         self.assertIsNone(models[0]["local"])

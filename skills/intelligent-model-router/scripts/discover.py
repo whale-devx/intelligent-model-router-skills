@@ -4,18 +4,20 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import date, datetime, timezone
 
 from route import DATE, MODEL, InputError, obj, read_request, validate
 
 
-def normalize(data: dict, format_name: str, provider: str, observed_at: str) -> dict:
-    validate(observed_at, DATE)
+def normalize(data: dict, format_name: str, provider: str, observed_at: str | None) -> dict:
+    if observed_at is not None:
+        validate(observed_at, DATE)
     if format_name == "inventory":
         schema = obj({"models": {"type": "array", "items": MODEL, "maxItems": 256}}, ("models",))
         validate(data, schema)
         models = data["models"]
     else:
+        if observed_at is None:
+            raise InputError("A raw catalog needs its original observation date")
         key, id_key = ("data", "id") if format_name == "openai-list" else ("models", "name")
         if not isinstance(data, dict) or not isinstance(data.get(key), list):
             raise InputError("Catalog must contain a model array")
@@ -42,10 +44,13 @@ def main() -> int:
     parser.add_argument("--input", required=True, help="Explicit local JSON file, or - for stdin")
     parser.add_argument("--format", required=True, choices=("inventory", "openai-list", "ollama-tags"))
     parser.add_argument("--provider", default="user-supplied", help="Catalog owner label, not a credential")
-    parser.add_argument("--observed-at", default=datetime.now(timezone.utc).date().isoformat())
+    parser.add_argument("--observed-at", metavar="YYYY-MM-DD",
+                        help="Original observation date, required for openai-list and ollama-tags")
     args = parser.parse_args()
+    if args.format != "inventory" and args.observed_at is None:
+        print(json.dumps({"status": "invalid_input", "error": "Supply the catalog's original date with --observed-at YYYY-MM-DD."}))
+        return 1
     try:
-        date.fromisoformat(args.observed_at)
         output = normalize(read_request(args.input), args.format, args.provider, args.observed_at)
         print(json.dumps(output, indent=2, ensure_ascii=False, allow_nan=False))
         return 0

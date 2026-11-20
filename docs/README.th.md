@@ -118,6 +118,11 @@ flowchart TD
 
 รายละเอียดอยู่ใน [Routing Contract](../skills/intelligent-model-router/references/contract.md)
 
+ถ้านำเข้าไฟล์รายชื่อโมเดลรูปแบบ OpenAI หรือ Ollama ด้วย `discover.py` ให้ใส่
+`--observed-at YYYY-MM-DD` ตามวันที่ได้รับรายชื่อจากบริการ ส่วนไฟล์ `inventory`
+จะเก็บวันที่เดิมของแต่ละรายการ หากพบ `access_source_catalog_only` ให้ตรวจที่มา
+และวันที่ของคำยืนยันสิทธิ์สำหรับ endpoint นั้นก่อนส่งคำขออีกครั้ง
+
 <a name="current-status"></a>
 
 ## สถานะปัจจุบัน
