@@ -106,9 +106,12 @@ The agent should inspect the inventory made available to it, apply the task's
 constraints, and use permitted evidence. If no discovery API exists, it should
 ask for a model list rather than guessing access or searching credential stores.
 
-**This alpha has no live inventory or leaderboard connectors.** You or the host
-must supply trustworthy inventory and comparable evidence. No evidence is a valid
-reason to abstain, not permission to manufacture model scores.
+**Optional local model-list adapters are available; live leaderboard imports are not.**
+The [authorized discovery guide](../skills/intelligent-model-router/references/live-discovery.md)
+covers OpenCode's experimental v2 listing and Ollama tags, explicit endpoint consent,
+and offline snapshots. Listing-only models remain `listed` and `unmapped`: the host
+or user must still establish access, exact configuration, and comparable evidence.
+No evidence is a valid reason to abstain, not permission to manufacture scores.
 
 ## Read the result
 

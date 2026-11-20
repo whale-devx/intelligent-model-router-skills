@@ -2,13 +2,14 @@
 
 [Project home](../README.md) · [Documentation](README.md) · [Host tests](HOST-TESTS.md)
 
-**Current focus: P0 — prove real interoperability.** The offline foundation is in
-place; installation, host discovery, and a real authorized handoff need evidence.
+**Current focus: P0 — prove real interoperability.** Installation verification is
+implemented. Opt-in model-list adapters now have protocol/fixture tests; live account
+access, host activation and a real authorized handoff still need separate evidence.
 
 | Milestone | Status | What must be demonstrated |
 | --- | --- | --- |
 | v0.1 alpha — portable foundation | Implemented offline | Skill package, validated decisions, explanations, tests |
-| P0 — real interoperability | Next | Reproducible installation, host inventory, licensed Arena import |
+| P0 — real interoperability | In progress | Host-account inventory, live conformance, licensed Arena import |
 | P1 — useful comparisons | Planned | Specialized evidence and same-task routing evaluations |
 | P2 — adaptive routing | Evidence-gated | Calibrated estimates and opt-in local feedback |
 
@@ -20,26 +21,34 @@ place; installation, host discovery, and a real authorized handoff need evidence
 - [x] Labeled synthetic example, unit/CLI tests, and CI definition.
 - [x] Contribution and security guidance.
 
-Not implemented: live fetching, native host execution, or calibrated predictions.
-The completed items above do not certify installation or behavior on any live host.
+The router remains offline. Optional discovery is separate from ranking and execution.
+No native model executor, live benchmark importer, or calibrated prediction exists yet.
 
 ## P0: establish real interoperability
 
 ### 1. Host conformance
 
-- [ ] Test `npx skills` installation and recommendation on at least two distinct hosts.
+- [x] Add reproducible `npx skills` installation/package checks; see [installation evidence](INSTALLATION-TESTS.md).
+- [ ] Test activation and recommendation on at least two distinct live hosts.
 - [ ] Record host/version/date and pass/fail for every step in [HOST-TESTS.md](HOST-TESTS.md).
 - [ ] Verify one real model-aware delegation path with user-authorized access.
-- [ ] Fall back correctly when the host cannot select models.
+- [ ] Verify recommendation fallback on a live host that cannot select models.
 
 No paid probes without approval. Installation success and confirmed execution must
-be recorded separately.
+be recorded separately. Directory targets in installer tests are not running hosts.
 
 ### 2. Inventory adapters
 
-- [ ] Add host-native discovery with an explicit permission contract.
-- [ ] Prove catalog-listed models cannot be upgraded to callable automatically.
-- [ ] Test offline, denied, stale, rate-limited, and no-model environments.
+- [x] Add opt-in listing adapters and an [explicit permission contract](../skills/intelligent-model-router/references/live-discovery.md).
+- [x] Keep catalog-listed models ineligible for execution; add router-contract regression checks.
+- [x] Add synthetic/loopback tests for offline snapshots, denied access, stale data, rate limits, and no models.
+- [ ] Validate the OpenCode experimental v2 contract on a real authorized host/version.
+- [ ] Record a real Ollama inventory without assuming local inference or tool support.
+- [ ] Add trusted access-verification and exact benchmark-identity mapping evidence.
+
+The new helpers can make real HTTP listing requests when authorized. Tests use fixture
+servers, not user accounts. A successful list is not proof of callability. Other hosts
+retain host-tool/manual discovery; no provider is mandatory.
 
 ### 3. Arena importer
 
@@ -82,7 +91,7 @@ be recorded separately.
 - [ ] Reviewed data rights.
 - [ ] Documented host support and live smoke tests.
 - [ ] Security review.
-- [ ] Reproducible installation.
+- [ ] Reproducible release installation.
 - [ ] Versioned changelog.
 
 No promised savings or universal support. No fixed release date is asserted until

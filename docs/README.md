@@ -10,6 +10,7 @@ separate steps; these guides help you follow the right path.
 | Guide | What you will find |
 | --- | --- |
 | [Getting started](GETTING-STARTED.md) | `npx skills` installation, first prompt, expected behavior, and troubleshooting |
+| [Authorized host discovery](../skills/intelligent-model-router/references/live-discovery.md) | Opt-in OpenCode/Ollama listings, permissions, snapshots, and evidence limits |
 | [ภาษาไทย](README.th.md) | ภาพรวม วิธีติดตั้ง ตัวอย่างการใช้งาน และข้อจำกัดปัจจุบัน |
 | [Current status](../README.md#current-status) | What the alpha does today and what is not yet verified |
 

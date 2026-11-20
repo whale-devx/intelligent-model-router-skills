@@ -314,7 +314,7 @@ class DiscoveryAndPackagingTests(unittest.TestCase):
 
     def test_ollama_import_is_listed_not_verified(self):
         result = normalize({"models": [{"name": "example:latest"}]}, "ollama-tags", "local", "2026-11-20")
-        self.assertTrue(result["models"][0]["local"])
+        self.assertIsNone(result["models"][0]["local"])
         self.assertEqual(result["models"][0]["access"], "listed")
 
     def test_empty_manual_inventory(self):

@@ -27,6 +27,14 @@ Read [the discovery and host protocol](references/host-protocol.md).
 Inspect only model lists and capabilities explicitly exposed by the current host
 or provided by the user. Reuse an authorized current inventory when available.
 
+For an existing OpenCode v2 or Ollama local service, the optional
+[authorized discovery adapter](references/live-discovery.md) can read a listing.
+Use it only after permission for the exact endpoint and project scope is established.
+Never scan ports, start a host, or silently add the network authorization flag.
+Protected hosts need approved credential delivery or a user-provided snapshot.
+The adapter returns listed/unmapped candidates, not verified access or execution rights.
+Local transport does not prove local inference. Retain unknowns and original dates.
+
 Record exact provider/API identifiers, model revision/configuration, access state,
 observation date, modalities, tools, context/output limits, and supported host actions.
 Keep candidate endpoint identity separate from benchmark model identity.
@@ -111,5 +119,7 @@ recommendations. State when the current model is retained or when evidence is ti
 - [route.py](scripts/route.py): validated, deterministic offline routing plans.
 - [discover.py](scripts/discover.py): import an explicitly supplied catalog/inventory;
   it does not scan the environment or verify callability.
+- [discover_host.py](scripts/adapters/discover_host.py): opt-in local host listings or
+  explicit snapshots; read the discovery permission contract before use.
 - [Synthetic request](assets/example-request.json): reproducible demonstration only.
 - [Empty inventory](assets/inventory-template.json): a safe starting point.
