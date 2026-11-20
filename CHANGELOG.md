@@ -5,6 +5,8 @@
 - Ignore benchmark rows keyed to discovery placeholders. Arena imports can check
   each mapped endpoint against a local routing request and retain shared
   configuration lineage without counting an observation twice.
+- Read the provider model ID from OpenCode v1.19.6 model records and represent
+  their zero token limits as unknown.
 
 - Add opt-in, read-only OpenCode experimental v2 model-list and Ollama tags adapters.
 - Require explicit local-service authorization; support offline snapshots with original

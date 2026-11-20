@@ -48,6 +48,34 @@ def ollama():
 
 
 class NormalizationTests(unittest.TestCase):
+    def test_opencode_1_19_6_nested_api_and_zero_limits(self):
+        row = opencode_row()
+        del row["modelID"], row["type"]
+        row["limit"] = {"context": 0, "output": 0}
+        for api_type in ("aisdk", "native"):
+            row["api"] = {"id": "underlying-model", "type": api_type, "settings": {"key": "private-value"}}
+            out = d.normalize(opencode([row]), "opencode-v2", "release", TODAY)
+            model, = out["inventory"]["models"]
+            self.assertEqual((model["api_model_id"], out["observations"][0]["provider_model_id"]),
+                             (row["id"], "underlying-model"))
+            self.assertEqual(model["access"], "listed")
+            self.assertIsNone(model["context_window"])
+            self.assertIsNone(model["max_output_tokens"])
+            self.assertNotIn("private-value", json.dumps(out))
+        row["limit"] = {"context": 4096, "input": 0, "output": 256}
+        model, = d.normalize(opencode([row]), "opencode-v2", "release", TODAY)["inventory"]["models"]
+        self.assertIsNone(model["context_window"])
+        self.assertEqual(model["max_output_tokens"], 256)
+
+    def test_opencode_rejects_conflicting_or_malformed_provider_identity(self):
+        row = opencode_row()
+        for api in (None, {}, {"type": "native", "id": "conflicting"}, {"type": "other", "id": row["modelID"]}):
+            with self.subTest(api=api), self.assertRaises(d.DiscoveryError):
+                d.normalize(opencode([dict(row, api=api)]), "opencode-v2", "release", TODAY)
+        row["api"] = {"type": "native", "id": row["modelID"]}
+        out = d.normalize(opencode([row]), "opencode-v2", "release", TODAY)
+        self.assertEqual(out["observations"][0]["provider_model_id"], row["modelID"])
+
     def test_opencode_retains_exact_host_and_provider_identifiers(self):
         result = d.normalize(opencode(), "opencode-v2", "host-a", TODAY)
         model = result["inventory"]["models"][0]
