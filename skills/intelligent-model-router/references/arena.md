@@ -50,6 +50,21 @@ Omitting `--request` preserves the standalone import mode and reports `not_run`.
 `unmatched_mappings` counts distinct mapping identities missing from the
 English snapshot. `unmapped` counts English source rows lacking a mapping.
 
+### Reviewing a thinking budget
+
+The pinned English snapshot lists two Anthropic entries for Sonnet 4.5 dated
+20250929. One is labeled `High, 32K`. OpenCode v1.19.6's fallback for manual
+thinking on its Anthropic SDK caps the `high` variant at 16,000 tokens and
+can reduce that budget further for a smaller output limit. [Arena snapshot](https://huggingface.co/datasets/lmarena-ai/leaderboard-dataset/blob/d3517dc2bbc13f82d925d8524f9c5cb5e4563d36/text/latest-00000-of-00001.parquet) · [OpenCode variant implementation](https://github.com/anomalyco/opencode/blob/f4e363c8295fa90a03dddc451882fffe8fbce357/packages/opencode/src/provider/transform.ts#L1045-L1091)
+
+Two offline listings with the same model and `high` variant but different
+request budgets (16,000 and 32,000) produced identical discovery reports.
+The adapter retains variant IDs and omits request bodies. Leave the mapping
+out until deployment evidence identifies the active settings and the benchmark
+evidence supports the same configuration. [Discovery contract](live-discovery.md)
+
+### Attribution and sharing
+
 The JSON report includes request-compatible evidence, corresponding lineage in
 the same order, source revision, checksum and excluded-row counts. Original
 publication dates drive the router's freshness filter. Null bounds and counts
