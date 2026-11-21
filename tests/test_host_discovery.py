@@ -41,6 +41,21 @@ def opencode(rows=None):
     return {"location": {"directory": "/synthetic/project"}, "data": rows if rows is not None else [opencode_row()]}
 
 
+def opencode_release_listing(api):
+    """A complete OpenCode v1.19.6 GET /api/model response."""
+    directory = "/synthetic/project"
+    return {
+        "location": {"directory": directory, "project": {"id": "fixture", "directory": directory}},
+        "data": [{
+            "id": "host-alias", "providerID": "fixture-provider", "name": "Example", "api": api,
+            "request": {"headers": {"X-Example": "private-marker"}, "body": {}},
+            "capabilities": {"tools": False, "input": [], "output": []}, "variants": [],
+            "time": {"released": 0}, "cost": [], "status": "active", "enabled": True,
+            "limit": {"context": 0, "output": 0},
+        }],
+    }
+
+
 def ollama():
     return {"models": [{"name": "fixture:cloud", "model": "fixture:cloud",
                         "digest": "a" * 64, "details": {"quantization_level": "Q4_K_M"},
@@ -49,21 +64,27 @@ def ollama():
 
 class NormalizationTests(unittest.TestCase):
     def test_opencode_1_19_6_nested_api_and_zero_limits(self):
-        row = opencode_row()
-        del row["modelID"], row["type"]
-        row["limit"] = {"context": 0, "output": 0}
-        for api_type in ("aisdk", "native"):
-            row["api"] = {"id": "underlying-model", "type": api_type, "settings": {"key": "private-value"}}
-            out = d.normalize(opencode([row]), "opencode-v2", "release", TODAY)
-            model, = out["inventory"]["models"]
-            self.assertEqual((model["api_model_id"], out["observations"][0]["provider_model_id"]),
-                             (row["id"], "underlying-model"))
-            self.assertEqual(model["access"], "listed")
-            self.assertIsNone(model["context_window"])
-            self.assertIsNone(model["max_output_tokens"])
-            self.assertNotIn("private-value", json.dumps(out))
-        row["limit"] = {"context": 4096, "input": 0, "output": 256}
-        model, = d.normalize(opencode([row]), "opencode-v2", "release", TODAY)["inventory"]["models"]
+        transports = (
+            {"type": "aisdk", "id": "underlying-model", "package": "private-marker"},
+            {"type": "native", "id": "underlying-model", "settings": {"key": "private-marker"}},
+        )
+        for api in transports:
+            with self.subTest(transport=api["type"]):
+                out = d.normalize(opencode_release_listing(api), "opencode-v2", "release", TODAY)
+                model, = out["inventory"]["models"]
+                note, = out["observations"]
+                self.assertEqual(model["api_model_id"], "host-alias")
+                self.assertEqual(note["provider_model_id"], "underlying-model")
+                self.assertEqual((model["access"], model["actions"]), ("listed", ["recommend"]))
+                self.assertFalse(note["configuration_verified"])
+                self.assertIsNone(model["context_window"])
+                self.assertIsNone(model["max_output_tokens"])
+                self.assertNotIn("private-marker", json.dumps(out))
+
+    def test_opencode_explicit_zero_input_limit_keeps_context_unknown(self):
+        listing = opencode_release_listing({"type": "native", "id": "underlying-model", "settings": {}})
+        listing["data"][0]["limit"] = {"context": 4096, "input": 0, "output": 256}
+        model, = d.normalize(listing, "opencode-v2", "release", TODAY)["inventory"]["models"]
         self.assertIsNone(model["context_window"])
         self.assertEqual(model["max_output_tokens"], 256)
 
