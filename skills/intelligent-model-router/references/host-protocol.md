@@ -44,10 +44,20 @@ Paths above are relative to this skill directory. `openai-list` accepts
 `{"models":[{"name":"example-model:tag"}]}`. An inventory is `{"models":[...]}`
 using the request's model schema. Copy its `models` array into a full request.
 
+For both raw catalog formats, supply the date the service returned the listing.
+If that date is unknown, obtain a dated listing through an authorized source.
+An omitted date returns `invalid_input`. For `--format inventory`, each model
+already carries its observation date. Import preserves every stored date.
+
 Imported catalogs set access to `listed`, capabilities to an empty array, and the
 benchmark identity to `unmapped:...`. This is intentionally NOT a ready-to-route
 inventory. Fill verified capability/identity/access details from trustworthy sources.
-The observation date must reflect the original observation, not a fabricated refresh.
+Keep the catalog record for reference. To submit an access declaration, identify
+its source and date in the candidate. To submit verified access, supply the
+source and date of a host entitlement or previously authorized call covering
+that exact endpoint and action. The receiving host must check that evidence.
+The importer labels `user-provided-catalog` and `host-catalog:…` describe only
+a listing. The router excludes candidates that use them to claim access.
 
 ## Subagent handoff
 

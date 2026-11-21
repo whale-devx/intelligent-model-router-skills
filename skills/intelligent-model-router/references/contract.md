@@ -47,6 +47,13 @@ and cache behavior for this request. Missing costs are NOT zero. Subscriptions a
 NOT assumed free. These assertions are not provider billing guarantees; the executor
 must enforce actual spending/timeout controls. Refresh them with the inventory.
 
+For `declared` and `verified` candidates, `access_source` must identify the
+independent basis for that claim. A whitespace-only source yields the exclusion reason
+`access_source_missing`. The reserved `user-provided-catalog` label and
+`host-catalog:` prefix yield `access_source_catalog_only` for either claim.
+The bundled `synthetic-fixture` source permits recommendations only. Other
+source descriptions remain caller assertions for the host to review.
+
 The context check uses input plus output reserve. The caller must include system
 instructions, tools, multimodal token accounting and reasoning reserves as applicable.
 

@@ -154,8 +154,13 @@ def fresh(stamp: str, today: date, days: int) -> bool:
 
 def eligibility(model: dict, task: dict, policy: dict, today: date) -> list[str]:
     reasons = []
+    access_source = model["access_source"].strip()
     if model["access"] not in ("verified", "declared"):
         reasons.append("access_not_established")
+    elif not access_source:
+        reasons.append("access_source_missing")
+    elif access_source == "user-provided-catalog" or access_source.startswith("host-catalog:"):
+        reasons.append("access_source_catalog_only")
     if not fresh(model["observed_at"], today, policy.get("max_access_age_days", 7)):
         reasons.append("access_stale_or_future")
     if "allowed_providers" in policy and model["provider"] not in policy["allowed_providers"]:
@@ -342,6 +347,9 @@ def route(request: dict, today: date | None = None) -> dict:
         result["warnings"].append("Only one model identity is eligible; no comparative advantage established.")
     if any(r.get("ci_lower") is None for c in cohorts for r in c["rows"].values()):
         result["warnings"].append("Some evidence lacks confidence intervals; small score gaps may not be meaningful.")
+    if selected["access_source"].strip() == "synthetic-fixture":
+        result["warnings"].append("The selected endpoint uses a synthetic access fixture; recommendation only.")
+        return result
     if selected["access"] != "verified":
         result["warnings"].append("User-declared access: verify callability before execution.")
         return result

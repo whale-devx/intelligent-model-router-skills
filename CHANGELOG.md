@@ -23,6 +23,10 @@
   inference. `local` now remains unknown unless separately established by the caller.
 - Add synthetic protocol, loopback HTTP, CLI and router-contract regression tests.
 - Preserve the offline router, provider neutrality and optional-script installation.
+- Require the original observation date when importing raw catalogs with
+  `discover.py`. Normalized inventories retain their per-model dates.
+- Exclude access claims backed only by catalog provenance. The bundled demo
+  inventory remains recommendation-only even with other benchmark inputs.
 
 No live-host activation, paid inference, model switching, subagent creation, release
 publication or universal host compatibility is certified by this change.

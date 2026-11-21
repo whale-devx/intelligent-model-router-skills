@@ -113,6 +113,12 @@ and offline snapshots. Listing-only models remain `listed` and `unmapped`: the h
 or user must still establish access, exact configuration, and comparable evidence.
 No evidence is a valid reason to abstain, not permission to manufacture scores.
 
+When importing a saved OpenAI-style catalog or Ollama tags file with
+`discover.py`, pass its original date with `--observed-at YYYY-MM-DD`.
+An inventory with dated entries can be imported as-is. If a candidate is
+excluded with `access_source_catalog_only`, review the separate declaration
+or host access record and its date before requesting another decision.
+
 ## Read the result
 
 | Field | How to interpret it |
