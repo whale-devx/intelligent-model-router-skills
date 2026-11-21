@@ -11,7 +11,7 @@ It never starts a host, scans ports, reads credential stores, or calls inference
 
 | Adapter | Single GET | Contract boundary |
 | --- | --- | --- |
-| `opencode-v2` | `/api/model` | OpenCode's experimental location/data model-list envelope; enabled chat models only |
+| `opencode-v2` | `/api/model` | OpenCode's experimental location/data model-list envelope; enabled models with explicit non-chat types skipped |
 | `ollama` | `/api/tags` | Ollama's model-list response; does not attest local inference, tools or context |
 
 OpenCode's older `/provider` and `/config/providers` APIs are **not** interchangeable
@@ -20,11 +20,14 @@ fallback probing. A 404 or changed schema is a reported failure, not an empty su
 This adapter's protocol is source-reviewed and fixture-tested; that is not proof of
 compatibility with every OpenCode release or a live authenticated user account.
 
-The OpenCode contract was reviewed at upstream commit
-`b958fc84d73e34a2fa021c285cd38c6de674adb9` on 2026-11-20:
-[route](https://github.com/anomalyco/opencode/blob/b958fc84d73e34a2fa021c285cd38c6de674adb9/packages/protocol/src/groups/model.ts),
-[model schema](https://github.com/anomalyco/opencode/blob/b958fc84d73e34a2fa021c285cd38c6de674adb9/packages/schema/src/model.ts),
-[location envelope](https://github.com/anomalyco/opencode/blob/b958fc84d73e34a2fa021c285cd38c6de674adb9/packages/schema/src/location.ts).
+OpenCode v1.19.6 returns the backend model ID in `api.id` for native and AI SDK
+entries. The development revision reviewed on 2026-11-20 returns it in `modelID`.
+Both shapes use the same endpoint. The adapter keeps the top-level `id` for the
+host alias and rejects conflicting backend IDs. The tagged schema also permits a
+model with no reported capabilities and zero token limits. The adapter leaves
+those limits unknown. [v1.19.6 model schema](https://github.com/anomalyco/opencode/blob/f4e363c8295fa90a03dddc451882fffe8fbce357/packages/schema/src/model.ts)
+and [development model schema](https://github.com/anomalyco/opencode/blob/b958fc84d73e34a2fa021c285cd38c6de674adb9/packages/schema/src/model.ts).
+
 The [official API reference](https://opencode.ai/docs/api) calls this route experimental
 and notes that the snapshot can precede plugin settlement.
 Ollama's [list API](https://docs.ollama.com/api/tags) and
@@ -118,7 +121,8 @@ for routing execution. Do not edit these labels merely to force a chosen result.
 A connected provider, enabled model, zero price, or HTTP 200 does not prove callability.
 
 For OpenCode, `api_model_id` is the exact **host model ID** (`id`), while the separate
-`observations.provider_model_id` preserves `modelID` for the underlying provider.
+`observations.provider_model_id` preserves the underlying provider ID from
+`api.id` or `modelID`.
 These can differ. No alias, API ID, reasoning effort, or quantization is guessed.
 Variants are listed but not selected or expanded into supposedly evaluated models.
 Capabilities and limits are host-reported assertions, not independent measurements.
@@ -151,6 +155,13 @@ timeout, and unavailable hosts. No failure silently starts a host or tries anoth
 provider. Exit code 0 means listing success (including no models), 2 means an expected
 permission/availability/freshness barrier, and 1 means invalid input/protocol. Argument
 parsing errors use argparse's exit code 2.
+
+On 2026-11-21, synthetic native and AI SDK listings passed schema validation against
+the tagged OpenAPI response for `GET /api/model` and were imported as listed.
+A flat development listing retained its previous normalized output. All three
+inventories produced `no_eligible_models` when passed to the router without
+separate access evidence. [v1.19.6 SDK specification](https://github.com/anomalyco/opencode/blob/f4e363c8295fa90a03dddc451882fffe8fbce357/packages/sdk/openapi.json)
+and [development protocol specification](https://github.com/anomalyco/opencode/blob/b958fc84d73e34a2fa021c285cd38c6de674adb9/packages/protocol/openapi.json).
 
 Tests use synthetic source rows and real HTTP requests to **fixture servers** on
 loopback, including credentials used only for the test. They are not live OpenCode or

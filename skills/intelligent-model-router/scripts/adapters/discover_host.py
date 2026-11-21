@@ -89,12 +89,25 @@ def token(value: object) -> str:
     return value
 
 
-def positive(value: object) -> int | None:
+def token_limit(value: object) -> int | None:
     if value is None:
         return None
-    if type(value) is not int or not 0 < value <= 2**53 - 1:
+    if type(value) is not int or not 0 <= value <= 2**53 - 1:
         fail()
-    return value
+    # OpenCode's empty model reports zero until its capacity is known.
+    return value or None
+
+
+def opencode_provider_model_id(row: dict) -> str:
+    if "api" not in row:
+        return token(row.get("modelID"))
+    api = row["api"]
+    if not isinstance(api, dict) or api.get("type") not in ("native", "aisdk"):
+        fail()
+    model_id = token(api.get("id"))
+    if "modelID" in row and token(row["modelID"]) != model_id:
+        fail()
+    return model_id
 
 
 def string_list(value: object) -> list[str]:
@@ -190,7 +203,7 @@ def normalize(data: object, adapter: str, instance: str, observed_at: str, *,
             if row.get("type", "chat") != "chat":
                 skipped["non_chat"] += 1
                 continue
-            note["provider_model_id"] = token(row.get("modelID"))
+            note["provider_model_id"] = opencode_provider_model_id(row)
             note["host_model_id"] = model_id
             note["lifecycle"] = row["status"]
             caps, limit, variants = row.get("capabilities"), row.get("limit"), row.get("variants")
@@ -209,9 +222,9 @@ def normalize(data: object, adapter: str, instance: str, observed_at: str, *,
             model["capabilities"] = sorted(set(capabilities))
             if len(model["capabilities"]) > 256:
                 fail()
-            context, input_limit = positive(limit.get("context")), positive(limit.get("input"))
+            context, input_limit = token_limit(limit.get("context")), token_limit(limit.get("input"))
             model["context_window"] = min(context, input_limit) if context and input_limit else context
-            model["max_output_tokens"] = positive(limit.get("output"))
+            model["max_output_tokens"] = token_limit(limit.get("output"))
             ids = []
             for variant in variants:
                 if not isinstance(variant, dict):
