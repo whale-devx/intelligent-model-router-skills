@@ -372,6 +372,41 @@ class RoutingTests(unittest.TestCase):
             self.request["task"]["risk"] = risk
             self.assertTrue(self.run_route()["requires_approval"])
 
+    def test_explain_each_delegation_blocker(self):
+        self.action_fixture()
+        self.request["models"][1]["access_source"] = "test-host-confirmation"
+        cases = [(self.request["host"], "actions", [], "host does not offer it"),
+                 (self.request["models"][1], "actions", [], "endpoint does not offer it"),
+                 (self.request["policy"], "authorized_actions", [], "policy does not authorize it"),
+                 (self.request["task"], "delegation_depth", 1, "delegation depth limit reached")]
+        for record, key, value, reason in cases:
+            with self.subTest(reason=reason):
+                original = record[key]
+                record[key] = value
+                result = self.run_route()
+                self.assertIn(f"delegate: {reason}.", result["reasons"])
+                self.assertEqual((result["action"], result["execution_status"]), ("recommend", "not_executed"))
+                record[key] = original
+
+    def test_explain_auto_and_intent_without_changing_action_order(self):
+        self.action_fixture()
+        self.request["models"][1]["access_source"] = "test-host-confirmation"
+        task = self.request["task"]
+        task.update(intent="auto", safe_boundary=True)
+        self.request["host"]["actions"] = ["recommend"]
+        self.request["models"][1]["actions"] = ["delegate", "switch", "invoke"]
+        reasons = self.run_route()["reasons"]
+        for action in ("switch", "invoke", "delegate"):
+            self.assertIn(f"{action}: host does not offer it.", reasons)
+        self.request["host"]["actions"] = ["delegate", "invoke"]
+        self.assertEqual(self.run_route()["action"], "invoke")
+        task["safe_boundary"] = False
+        self.assertIn("Automatic handoff requires a safe task boundary.", self.run_route()["reasons"])
+        task["current_candidate_id"] = "example-b"
+        self.assertIn("The selected endpoint is already the current candidate.", self.run_route()["reasons"])
+        task["intent"] = "recommend"
+        self.assertIn("The request asks for a recommendation only.", self.run_route()["reasons"])
+
     def test_auto_switch_requires_boundary(self):
         self.action_fixture()
         self.request["task"].update(intent="auto", safe_boundary=True)

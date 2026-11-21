@@ -80,6 +80,8 @@ If delegation is unavailable, recommend only.
 ### 3. Review the plan
 
 Expect the selected model, reasons, evidence dates, exclusions, and execution status.
+When a verified endpoint stays a recommendation, check `reasons` for the
+missing host or endpoint capability, policy authorization or delegation limit.
 The helper **does not call a model**: it returns a recommendation or a proposed
 host operation. A host must revalidate permissions and confirm any actual handoff.
 
