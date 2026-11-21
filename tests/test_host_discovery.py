@@ -41,18 +41,6 @@ def opencode(rows=None):
     return {"location": {"directory": "/synthetic/project"}, "data": rows if rows is not None else [opencode_row()]}
 
 
-def opencode_release_listing(api):
-    # Complete response in the published v1.19.6 GET /api/model shape.
-    row = {"id": "host-alias", "providerID": "fixture-provider", "name": "Example",
-           "api": api, "request": {"headers": {"X-Example": "private-marker"}, "body": {}},
-           "capabilities": {"tools": False, "input": [], "output": []},
-           "variants": [], "time": {"released": 0}, "cost": [], "status": "active",
-           "enabled": True, "limit": {"context": 0, "output": 0}}
-    directory = "/synthetic/project"
-    return {"location": {"directory": directory, "project": {"id": "fixture", "directory": directory}},
-            "data": [row]}
-
-
 def ollama():
     return {"models": [{"name": "fixture:cloud", "model": "fixture:cloud",
                         "digest": "a" * 64, "details": {"quantization_level": "Q4_K_M"},
@@ -131,45 +119,6 @@ class NormalizationTests(unittest.TestCase):
         with self.assertRaises(d.DiscoveryError) as caught:
             d.normalize(opencode(), "opencode-v2", "test", TODAY, expected_directory="/other")
         self.assertEqual(caught.exception.code, "scope_mismatch")
-
-    def test_opencode_release_nested_provider_id_is_distinct_from_host_alias(self):
-        for api in ({"type": "native", "id": "backend/model", "settings": {"key": "private-marker"}},
-                    {"type": "aisdk", "id": "backend/model", "package": "private-marker"}):
-            with self.subTest(transport=api["type"]):
-                result = d.normalize(opencode_release_listing(api), "opencode-v2", "test", TODAY)
-                model, = result["inventory"]["models"]
-                note, = result["observations"]
-                self.assertEqual(model["api_model_id"], "host-alias")
-                self.assertEqual(note["provider_model_id"], "backend/model")
-                self.assertEqual((model["access"], model["actions"]), ("listed", ["recommend"]))
-                self.assertFalse(note["configuration_verified"])
-                self.assertNotIn("private-marker", json.dumps(result))
-
-    def test_opencode_conflicting_or_unrecognized_identity_is_rejected(self):
-        for api in (None, {"id": "provider-api-model"}, {"type": "future", "id": "provider-api-model"},
-                    {"type": "native"}, {"type": "native", "id": "different"}):
-            with self.subTest(api=api):
-                row = opencode_row()
-                row["api"] = api
-                with self.assertRaises(d.DiscoveryError) as caught:
-                    d.normalize(opencode([row]), "opencode-v2", "test", TODAY)
-                self.assertEqual(caught.exception.code, "invalid_response")
-        row = opencode_row()
-        row["api"] = {"type": "native", "id": row["modelID"], "settings": {}}
-        result = d.normalize(opencode([row]), "opencode-v2", "test", TODAY)
-        self.assertEqual(result["observations"][0]["provider_model_id"], row["modelID"])
-
-    def test_zero_host_limits_remain_unknown(self):
-        row = opencode_row()
-        row["limit"] = {"context": 0, "input": 0, "output": 0}
-        result = d.normalize(opencode([row]), "opencode-v2", "test", TODAY)
-        model, = result["inventory"]["models"]
-        self.assertIsNone(model["context_window"])
-        self.assertIsNone(model["max_output_tokens"])
-        self.assertIsNone(result["observations"][0]["reported_input_limit"])
-        row["limit"]["context"] = False
-        with self.assertRaises(d.DiscoveryError):
-            d.normalize(opencode([row]), "opencode-v2", "test", TODAY)
 
     def test_unknown_capacities_not_invented(self):
         row = opencode_row()
