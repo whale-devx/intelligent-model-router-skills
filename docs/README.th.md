@@ -208,3 +208,11 @@ Scripts ใช้ Python Standard Library เท่านั้น ดู [แ�
 [Changelog](../CHANGELOG.md) · [Security](../SECURITY.md) · [กลับด้านบน](#intelligent-model-router-skills)
 
 [นำเข้าคะแนนความชอบด้านข้อความภาษาอังกฤษจาก snapshot ของ Arena](../skills/intelligent-model-router/references/arena.md)
+
+ใช้ `--request request.json` เพื่อตรวจว่า mapping ของ Arena ตรงกับ endpoint ในคำขอ
+Router จะไม่นำคีย์จากการสำรวจที่ขึ้นต้นด้วย `unmapped:` มาใช้เป็นคะแนนคุณภาพ
+ถ้าได้ผล `insufficient_evidence` ให้ดู `evidence_coverage` เพื่อหาคีย์โมเดลที่ยังขาดข้อมูล
+และดูว่ามีแหล่งข้อมูลอิสระกี่แหล่งที่เปรียบเทียบโมเดลที่ผ่านเกณฑ์ได้ครบ
+[วิธีอ่านผลลัพธ์](../skills/intelligent-model-router/references/contract.md#diagnosing-insufficient-evidence)
+เมื่อเผยแพร่คะแนนที่แปลงแล้ว ให้คัดลอก `source_notice` เพื่อระบุแหล่งข้อมูล
+ใบอนุญาต และวิธีแปลงข้อมูล เก็บรายงานฉบับเต็มไว้ในเครื่องเพราะมีรหัส endpoint ที่คุณตั้งไว้

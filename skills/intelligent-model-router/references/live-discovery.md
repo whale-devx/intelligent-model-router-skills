@@ -20,7 +20,13 @@ fallback probing. A 404 or changed schema is a reported failure, not an empty su
 This adapter's protocol is source-reviewed and fixture-tested; that is not proof of
 compatibility with every OpenCode release or a live authenticated user account.
 
-The OpenCode contract was reviewed at upstream commit
+The schema shipped in OpenCode v1.19.6 places the underlying model ID in
+`api.id` for the `native` and `aisdk` variants. Its empty model uses zero
+context and output limits. The adapter reports those capacities as unknown.
+The release schema and route were checked against upstream source and tested
+with local fixtures. [Release model schema](https://github.com/anomalyco/opencode/blob/f4e363c8295fa90a03dddc451882fffe8fbce357/packages/schema/src/model.ts) · [Release route](https://github.com/anomalyco/opencode/blob/f4e363c8295fa90a03dddc451882fffe8fbce357/packages/protocol/src/groups/model.ts)
+
+The other supported OpenCode schema was reviewed at upstream commit
 `b958fc84d73e34a2fa021c285cd38c6de674adb9` on 2026-11-20:
 [route](https://github.com/anomalyco/opencode/blob/b958fc84d73e34a2fa021c285cd38c6de674adb9/packages/protocol/src/groups/model.ts),
 [model schema](https://github.com/anomalyco/opencode/blob/b958fc84d73e34a2fa021c285cd38c6de674adb9/packages/schema/src/model.ts),
@@ -118,8 +124,9 @@ for routing execution. Do not edit these labels merely to force a chosen result.
 A connected provider, enabled model, zero price, or HTTP 200 does not prove callability.
 
 For OpenCode, `api_model_id` is the exact **host model ID** (`id`), while the separate
-`observations.provider_model_id` preserves `modelID` for the underlying provider.
-These can differ. No alias, API ID, reasoning effort, or quantization is guessed.
+`observations.provider_model_id` preserves `api.id` or `modelID` for the underlying provider.
+These can differ from the host ID. A row containing both provider forms must agree
+on the ID. No alias, API ID, reasoning effort, or quantization is guessed.
 Variants are listed but not selected or expanded into supposedly evaluated models.
 Capabilities and limits are host-reported assertions, not independent measurements.
 If a separate input limit is smaller than context, the routing context ceiling is

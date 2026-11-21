@@ -31,6 +31,10 @@ Keep the request local; do not commit personal inventory or private evaluations.
 the host may pass to its provider tool. `model_key` identifies the evaluated revision
 AND configuration (effort, quantization, etc.); mappings are explicit caller inputs.
 Two endpoints may share one model key only when their evaluated configurations match.
+Discovery reserves the `unmapped:` prefix for endpoints awaiting identity review.
+Evidence carrying that prefix is ignored even if its key matches an endpoint.
+An otherwise eligible unmapped endpoint prevents a complete comparison cohort.
+The router returns `insufficient_evidence` until all eligible identities are covered.
 
 Required fields: `id`, `model_key`, `provider`, `api_model_id`, `access`, `observed_at`,
 `access_source`, `capabilities`, `actions`, `local`. Optional capacity fields are
@@ -68,6 +72,17 @@ this release does not estimate that transfer penalty.
 A sample size or confidence interval is metadata, not a guarantee of unbiased tests.
 Confidence intervals must enclose the observation and have both bounds or neither.
 Do not invent missing intervals, sample counts, scores, or licenses.
+
+### Source attribution
+
+For each reported cohort, `records` contains one scored observation per model
+key. If multiple sources supplied the same observation, `additional_sources`
+lists the other citations by model key, with their source IDs, URLs and stated
+licenses. Repeating an identical citation adds no entry. Each distinct
+publication retains the license statement supplied for it. Conflicting
+statements about the same observation at the same URL produce `invalid_input`.
+Check the original publication and reconcile the statements before retrying.
+Mirror citations contribute no extra vote or independent origin.
 
 ## Deterministic algorithm
 
@@ -130,3 +145,19 @@ Rankings are quality ordered; an efficiency preference may select a different ro
 Exit codes: 0 selected/schema printed; 2 abstention; 1 invalid/unreadable input.
 Malformed CLI arguments use argparse's exit code 2. Default date is UTC today;
 `--as-of YYYY-MM-DD` is for reproducible replay, not falsifying live freshness.
+
+### Diagnosing insufficient evidence
+
+For `insufficient_evidence`, inspect `evidence_coverage` before adding another source.
+It counts distinct eligible model keys and lists those with no matching observation
+in `missing_model_keys`. Observations must pass the task, language, identity,
+freshness and source-policy filters. Duplicate endpoints for one key count once.
+Keep private configuration keys out of any shared report.
+
+If the list is empty, compare `complete_origins` with `required_origins`.
+For example, one evaluation might cover models A and B while another covers
+only C. All three identities have evidence, yet neither cohort compares all
+three. In that case `incomplete_cohorts` is 2 and `complete_origins` is 0.
+A cohort enters the count when at least one eligible observation survives.
+Mirrors of the same origin cannot meet a requirement for a second origin.
+Collect matching evidence for the intended inventory before retrying.

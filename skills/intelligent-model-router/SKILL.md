@@ -38,6 +38,8 @@ Local transport does not prove local inference. Retain unknowns and original dat
 Record exact provider/API identifiers, model revision/configuration, access state,
 observation date, modalities, tools, context/output limits, and supported host actions.
 Keep candidate endpoint identity separate from benchmark model identity.
+For Arena imports, check reviewed mappings against the intended local request.
+Keep the original observation date and the [identity check result](references/arena.md).
 If access cannot be discovered, ask for the user's model list; do not guess it.
 
 A user-declared model may receive a recommendation, but execution planning requires
